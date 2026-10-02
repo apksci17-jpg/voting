@@ -62,12 +62,16 @@
             const user = await initPage('admin', 'dashboard');
             if (!user) return;
 
-            const res = await api.admin.dashboard();
-            const { stats, status } = res;
-            const isOpen = status === 'OPEN';
-            
-            const content = `
-                <div class="animate-fade-in-up">
+            try {
+                const res = await api.admin.dashboard();
+                if (!res || !res.success) {
+                    throw new Error((res && res.error) || 'Failed to load dashboard data');
+                }
+                const { stats, status } = res;
+                const isOpen = status === 'OPEN';
+                
+                const content = `
+                    <div class="animate-fade-in-up">
                 <!-- Welcome Banner -->
                 <div style="background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%); border-radius: 18px; padding: 28px 32px; margin-bottom: 28px; color: #ffffff; box-shadow: 0 8px 24px rgba(37, 99, 235, 0.18); display: flex; justify-content: space-between; align-items: center; flex-wrap: gap; gap: 20px;">
                     <div>
@@ -210,6 +214,23 @@
                 </div>
             `;
             document.getElementById('pageContent').innerHTML = content;
+            } catch (err) {
+                document.getElementById('pageContent').innerHTML = `
+                    <div style="background: #ffffff; border: 1px solid #fee2e2; border-left: 4px solid #ef4444; border-radius: 12px; padding: 24px; margin-top: 20px; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.08);">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                            <span style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: #fee2e2; color: #dc2626;">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            </span>
+                            <h3 style="color: #991b1b; margin: 0; font-size: 17px; font-weight: 800;">Unable to Load Dashboard</h3>
+                        </div>
+                        <p style="color: #475569; font-size: 14px; margin-bottom: 18px; line-height: 1.5;">${err.message}</p>
+                        <button onclick="window.location.reload()" style="background: #2563eb; color: #ffffff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+                            <span>Retry</span>
+                        </button>
+                    </div>
+                `;
+            }
 
             window.downloadAuditPdf = async () => {
                 try {

@@ -96,7 +96,17 @@ const api = {
                 throw new Error('Unauthorized');
             }
 
-            return await response.json();
+            const rawText = await response.text();
+            let parsedData;
+            try {
+                parsedData = JSON.parse(rawText);
+            } catch (jsonErr) {
+                console.error(`Non-JSON response from ${endpoint}:`, rawText);
+                const stripped = rawText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+                throw new Error(stripped || `Server returned invalid response (HTTP ${response.status})`);
+            }
+
+            return parsedData;
         } finally {
             updateFullscreenLoader('finish');
         }

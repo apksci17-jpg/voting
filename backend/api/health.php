@@ -4,6 +4,7 @@ header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: *");
 
 $response = [
+    'version' => '2026-10-03-01',
     'status' => 'healthy',
     'php_version' => PHP_VERSION,
     'timestamp' => date('Y-m-d H:i:s'),

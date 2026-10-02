@@ -96,11 +96,14 @@ function getVotesTimelineData() {
 
     // Fetch distinct voter ballots sorted by created_at
     $stmt = $pdo->query("
-        SELECT DATE_FORMAT(MIN(created_at), '%h:%i %p') as time_label,
-               MIN(created_at) as created_at
-        FROM votes
-        GROUP BY voter_id
-        ORDER BY created_at ASC
+        SELECT DATE_FORMAT(sub.ballot_time, '%h:%i %p') as time_label,
+               sub.ballot_time
+        FROM (
+            SELECT voter_id, MIN(created_at) as ballot_time
+            FROM votes
+            GROUP BY voter_id
+        ) sub
+        ORDER BY sub.ballot_time ASC
     ");
     $ballotTimes = $stmt->fetchAll(PDO::FETCH_ASSOC);
     $totalVotesCast = count($ballotTimes);

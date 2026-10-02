@@ -28,8 +28,4 @@ echo "Active MPMs in Apache:"
 ls -la /etc/apache2/mods-enabled/mpm* 2>/dev/null || true
 
 echo "=== Starting Apache in foreground on port ${APP_PORT} ==="
-if [ "$#" -gt 0 ] && [ "$1" != "apache2-foreground" ]; then
-    exec "$@"
-else
-    exec apache2-foreground
-fi
+exec apache2-foreground

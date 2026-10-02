@@ -30,6 +30,5 @@ RUN mkdir -p /var/www/html/frontend/assets/uploads /var/www/html/backend/backups
 # Expose default container port
 EXPOSE 8080
 
-# Run entrypoint script on startup
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["apache2-foreground"]
+# Run entrypoint script on container start
+CMD ["/usr/local/bin/entrypoint.sh"]

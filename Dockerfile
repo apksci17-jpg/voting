@@ -4,8 +4,10 @@ FROM php:8.2-apache
 # Install PDO MySQL driver required for database operations
 RUN docker-php-ext-install pdo pdo_mysql
 
-# Enable Apache rewrite and headers modules for CORS and .htaccess
-RUN a2enmod rewrite headers
+# Fix "AH00534: Configuration error: More than one MPM loaded"
+# Explicitly remove all conflicting MPM modules and enable ONLY mpm_prefork
+RUN rm -f /etc/apache2/mods-enabled/mpm_*.load /etc/apache2/mods-enabled/mpm_*.conf \
+    && a2enmod mpm_prefork rewrite headers
 
 # Configure Apache to listen on port 8080 (Railway's default container port)
 RUN sed -i 's/80/8080/g' /etc/apache2/ports.conf /etc/apache2/sites-available/000-default.conf \
@@ -25,5 +27,5 @@ RUN mkdir -p /var/www/html/frontend/assets/uploads /var/www/html/backend/backups
 # Expose port 8080
 EXPOSE 8080
 
-# Start Apache directly using official foreground runner
-CMD ["apache2-foreground"]
+# Clean any conflicting MPM modules at container start and launch Apache
+CMD rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.* 2>/dev/null; apache2-foreground

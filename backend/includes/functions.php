@@ -96,8 +96,8 @@ function getVotesTimelineData() {
 
     // Fetch distinct voter ballots sorted by created_at
     $stmt = $pdo->query("
-        SELECT DATE_FORMAT(created_at, '%h:%i %p') as time_label,
-               created_at
+        SELECT DATE_FORMAT(MIN(created_at), '%h:%i %p') as time_label,
+               MIN(created_at) as created_at
         FROM votes
         GROUP BY voter_id
         ORDER BY created_at ASC
@@ -145,7 +145,7 @@ function getVotesByPositionData() {
         SELECT p.position_name, COUNT(v.id) as vote_count 
         FROM positions p
         LEFT JOIN votes v ON p.id = v.position_id
-        GROUP BY p.id
+        GROUP BY p.id, p.position_name, p.display_order
         ORDER BY p.display_order ASC
     ");
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);

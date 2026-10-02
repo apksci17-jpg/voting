@@ -61,6 +61,13 @@ function getDBConnection() {
         } catch (Exception $tzEx) {
             // Some shared hosts restrict SET time_zone; fallback to PHP date_default_timezone_set
         }
+
+        // Disable ONLY_FULL_GROUP_BY in session to support flexible analytical aggregations in MySQL 8.x
+        try {
+            $pdo->exec("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));");
+        } catch (Exception $sqlModeEx) {
+            // Ignore if restricted
+        }
     } catch (PDOException $e) {
         // If on localhost and database doesn't exist, try creating it automatically
         if (DB_HOST === 'localhost' || DB_HOST === '127.0.0.1') {

@@ -32,6 +32,20 @@ function getDBConnection() {
             PDO::ATTR_EMULATE_PREPARES => false,
         ]);
         
+        // Auto-initialize tables and seed data if users table does not exist (e.g. fresh Railway deploy)
+        try {
+            $check = $pdo->query("SHOW TABLES LIKE 'users'");
+            if ($check->rowCount() === 0) {
+                $schemaFile = __DIR__ . '/../database/schema.sql';
+                if (file_exists($schemaFile)) {
+                    $sql = file_get_contents($schemaFile);
+                    $pdo->exec($sql);
+                }
+            }
+        } catch (Exception $initEx) {
+            // Proceed even if auto-init is skipped or restricted
+        }
+
         // Synchronize MySQL session timezone with Asia/Manila (+08:00) safely
         try {
             $pdo->exec("SET time_zone = '+08:00';");

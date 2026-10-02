@@ -64,6 +64,9 @@ The system is architected as a **headless, decoupled system**:
 - `POST ?action=delete_voter`: Safely deletes voter and cascade-deletes votes in an atomic transaction.
 - `POST ?action=reset_voter_ballot`: Wipes a specific voter's ballot and resets `has_voted = 0` in an atomic transaction.
 
+### 2.4 Cloud Health Diagnostic (`backend/api/health.php`)
+- `GET`: Returns JSON report of deployment health, PHP runtime version, environment variable flags (`has_MYSQL_URL`, `has_MYSQLHOST`, `has_PORT`), database connection status, and list of auto-provisioned tables. Does not require authentication.
+
 ---
 
 ## 3. UI/UX Design System, Typography & Animations
@@ -103,3 +106,19 @@ The frontend is specifically structured for direct compilation into native iOS a
 2. **Atomic Vote Commit**: Double-voting is strictly prevented via MySQL transactions and `has_voted` account verification.
 3. **AES-256-CBC Encryption**: Ballots are stored encrypted with initialization vectors; plaintext votes are never written to disk or logs.
 4. **Certified PDF Archival**: Every reset triggers generation of a permanent PDF audit report with SHA-256 integrity signatures.
+
+---
+
+## 6. Cloud Deployment & Containerization Architecture (Railway.app)
+
+- **Containerization Blueprint (`Dockerfile`, `entrypoint.sh`, `railway.json`)**:
+  - Base Image: `php:8.2-apache` with `pdo_mysql`.
+  - MPM Conflict Mitigation: `entrypoint.sh` executes `a2dismod mpm_event mpm_worker` and enforces `a2enmod mpm_prefork` before starting `apache2-foreground` to prevent Apache `AH00534` crashes.
+  - Dynamic Port Configuration: Adapts Apache to Railway's assigned `$PORT` environment variable (defaults to 8080).
+  - Builder Configuration: Enforced `"builder": "DOCKERFILE"` in `railway.json`.
+- **Database Engine Compatibility (MySQL 8.0)**:
+  - All analytical queries in `backend/includes/functions.php` utilize strict subqueries and aggregates to comply with `ONLY_FULL_GROUP_BY`.
+  - Automatic database schema and account provisioning executes on virgin database instances via `backend/database/schema.sql`.
+- **API Error Normalization**:
+  - Suppressed HTML error output in `backend/config/cors.php` via `ini_set('display_errors', '0')` and registered global JSON exception handler, ensuring all errors output valid JSON payloads rather than HTML strings.
+

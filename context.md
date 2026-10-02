@@ -194,26 +194,56 @@ This document maintains a comprehensive record of all changes, features, archite
 
 ---
 
+### M. Railway.app Cloud Hosting, Dockerization & MySQL 8.0 Engine Hardening
+- **Stakeholder Directive**: Guide on publishing the backend for Capacitor mobile app integration, evaluate InfinityFree compatibility, and host the system on Railway.app.
+- **InfinityFree Feasibility & Incompatibility Assessment**:
+  - Rigorously evaluated InfinityFree free PHP hosting for mobile API readiness.
+  - Discovered that InfinityFree enforces a mandatory client-side browser verification challenge (setting an obfuscated `__test` cookie via AES JavaScript execution before granting access).
+  - Because native Capacitor mobile applications (`fetch()` / WebViews) cannot execute the external challenge cookie verification loop, all mobile API requests are rejected with **HTTP 403 Forbidden**. InfinityFree was ruled out and modern containerized PaaS (Railway.app) was selected.
+- **Production Container Architecture (`Dockerfile`, `entrypoint.sh`, `railway.json`)**:
+  - Packaged the application into a standalone Docker container using `php:8.2-apache`.
+  - **Resolved Apache MPM Conflict (`AH00534`)**: Standard Debian Apache images on Railway encounter Multi-Processing Module collision (`AH00534: apache2: Configuration error: More than one MPM loaded`) caused by conflicting `mpm_event` and `mpm_worker` modules. Created a dedicated startup script (`entrypoint.sh`) that strictly unloads conflicting MPMs and enforces `mpm_prefork` before starting Apache.
+  - **Dynamic Port Assignment**: Configured `entrypoint.sh` to dynamically adapt Apache's `ports.conf` and `<VirtualHost>` configuration to Railway's assigned container `$PORT` (defaulting to 8080).
+  - **Config as Code (`railway.json`)**: Configured `"builder": "DOCKERFILE"` with automatic restart policies.
+- **Zero-Config Cloud Database Provisioning (`backend/config/database.php` & `schema.sql`)**:
+  - Configured `database.php` to auto-detect Railway's `MYSQL_URL` and discrete variables (`MYSQLHOST`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLDATABASE`, `MYSQLPORT`), with seamless fallback to local XAMPP.
+  - Built-in automatic table provisioning from `backend/database/schema.sql` on virgin databases (auto-creating `users`, `positions`, `candidates`, `votes`, and `election_settings` with 31 seed voters and default admin).
+  - Created cloud diagnostic health endpoint (`backend/api/health.php`) providing status, environment checks, and table existence verification.
+- **MySQL 8.0 `ONLY_FULL_GROUP_BY` Compatibility Hardening**:
+  - Railway's managed MySQL 8.0 enforces `sql_mode=only_full_group_by` by default.
+  - Rewrote analytical queries in `backend/includes/functions.php`:
+    - `getVotesTimelineData()`: Encapsulated ballot aggregations into a strict subquery (`SELECT voter_id, MIN(created_at) as ballot_time FROM votes GROUP BY voter_id`) to ensure full compliance across all SQL engines.
+    - `getVotesByPositionData()`: Explicitly included all non-aggregated columns (`p.id, p.position_name, p.display_order`) in the `GROUP BY` clause.
+  - Injected session-level SQL mode adjustment into PDO connection setup (`SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));`).
+- **Zero HTML Leakage in API Responses & Client Resilience**:
+  - Added `ini_set('display_errors', '0')` and registered a global `set_exception_handler` in `backend/config/cors.php` ensuring uncaught exceptions always output clean JSON (`{"success": false, "error": "..."}`) with HTTP 500 instead of raw HTML error banners (`<br /><b>Fatal error...`).
+  - Upgraded `api.request()` in `frontend/js/api.js` to safely inspect response text and strip HTML tags upon parse failure, preventing uncaught promise syntax crashes.
+  - Added try-catch fallback error card with an interactive "Retry" button on `frontend/admin/dashboard.html`.
+
+---
+
 ## 3. Current Directory & File Inventory
 
 ```
 c:/xampp/htdocs/voting/
 ├── backend/
 │   ├── api/
+│   │   ├── .htaccess               # FastCGI Bearer authorization & CORS rules
 │   │   ├── admin.php               # Administrative management JSON API (positions, candidates, voters, control, results)
 │   │   ├── auth.php                # Authentication & identity JSON API
+│   │   ├── health.php              # Cloud health check & deployment diagnostic endpoint
 │   │   └── voter.php               # Student voter operations JSON API
 │   ├── config/
-│   │   ├── cors.php                # Permissive CORS headers & preflight handler
-│   │   └── database.php            # MySQL PDO connection singleton
+│   │   ├── cors.php                # Permissive CORS headers, preflight handler & JSON exception handling
+│   │   └── database.php            # MySQL PDO connection singleton (Railway MYSQL_URL + XAMPP auto-detect)
 │   ├── database/
-│   │   ├── schema.sql              # Clean database schema
+│   │   ├── schema.sql              # Clean database schema definition with auto-init support
 │   │   └── voting_db_import.sql    # Complete SQL seed with positions & 31 student accounts
 │   ├── includes/
 │   │   ├── api_auth.php            # Bearer token validation middleware
 │   │   ├── encryption.php          # AES-256-CBC cryptographic ballot utilities
 │   │   ├── fpdf.php                # FPDF 1.86 vector PDF engine
-│   │   ├── functions.php           # Election schedules, result tallies & helpers
+│   │   ├── functions.php           # Election schedules, result tallies & MySQL 8 compliant queries
 │   │   └── pdf_export.php          # Certified election audit report generator
 │   └── backups/                    # Storage directory for certified PDF archives
 │
@@ -232,7 +262,7 @@ c:/xampp/htdocs/voting/
 │   │   │   └── login_bg.png        # Official ballot box voting graphic
 │   │   └── uploads/                # Uploaded candidate profile photos
 │   ├── js/
-│   │   ├── api.js                  # Frontend API network wrapper & token persistence
+│   │   ├── api.js                  # Frontend API network wrapper, non-JSON error handling & token persistence
 │   │   └── components.js           # Layout injector, responsive drawer & SVG icons
 │   ├── voter/
 │   │   ├── ballot.html             # Digital ballot selection cards with SVG checkmarks
@@ -245,7 +275,10 @@ c:/xampp/htdocs/voting/
 │
 ├── index.php                       # Root redirector to frontend/login.html
 ├── Dockerfile                      # Production container recipe for Railway.app & cloud PaaS
+├── entrypoint.sh                   # Startup container initializer (MPM fix, port binding, permissions)
+├── railway.json                    # Railway deployment & builder configuration as code
 ├── .dockerignore                   # Docker build exclusions
+├── .gitattributes                  # Git line-ending normalization (LF for shell scripts)
 ├── RULES.md                        # Architectural rules & operating principles
 ├── SKILL.md                        # Skill definition & implementation guide
 ├── structure.md                    # System architecture & component blueprint

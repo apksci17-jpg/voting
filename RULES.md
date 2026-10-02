@@ -193,7 +193,31 @@ Never authorize actions based on `localStorage` role flags, hidden form inputs, 
 
 ---
 
-## 8. Definition of Done
+## 8. Cloud Hosting, Containerization & SQL Compatibility Rules
+
+### Rule 8.1 — Environment-Agnostic Database Connection
+- Never hardcode cloud or local database credentials.
+- `backend/config/database.php` must support standard PaaS database URLs (`MYSQL_URL`) as well as discrete environment variables (`MYSQLHOST`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLDATABASE`, `MYSQLPORT`), with seamless fallback to local XAMPP (`localhost`, `root`, blank password, `voting`).
+
+### Rule 8.2 — Single Apache MPM Module Enforcement
+- When building or running Debian-based Apache Docker containers (`php:8.2-apache`), strictly enforce `mpm_prefork` and purge conflicting MPM modules (`mpm_event`, `mpm_worker`) before Apache starts.
+- Never allow multiple MPM modules to load simultaneously, which prevents fatal `AH00534` container startup crashes.
+
+### Rule 8.3 — Dynamic Container Port Binding
+- In containerized environments, the application must dynamically bind Apache's listening ports to the runtime `$PORT` environment variable (defaulting to 8080) rather than hardcoded port 80.
+
+### Rule 8.4 — Modern MySQL 8.x Strict Group By Compliance
+- All SQL queries that utilize `GROUP BY` must comply with `ONLY_FULL_GROUP_BY` (SQL-92 standard).
+- Every non-aggregated column in the `SELECT` list must be included in the `GROUP BY` clause, or calculated using an aggregate function (e.g. `MIN()`, `MAX()`, `COUNT()`), or encapsulated within a structured subquery.
+- Database connection initialization must apply `SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));` as defensive resilience against legacy analytical queries.
+
+### Rule 8.5 — Zero HTML Leakage in API Responses
+- All API endpoints must suppress raw HTML error output (`ini_set('display_errors', '0')`) and register JSON exception handlers.
+- Endpoints must NEVER output HTML tags (`<br /><b>Fatal error...`) to client callers, as this corrupts JSON parsing in web and mobile applications.
+
+---
+
+## 9. Definition of Done
 
 A task is complete only when:
 1. The requested feature or fix operates correctly.
@@ -202,4 +226,6 @@ A task is complete only when:
 4. Election-state rules and transaction boundaries remain intact.
 5. All icons use clean inline SVG vectors without emojis.
 6. Mobile responsiveness and Capacitor readiness are preserved.
-7. Documentation (.md files) is updated to reflect all architectural changes.
+7. Cloud containerization, dynamic port binding, and MySQL 8 compatibility are preserved.
+8. Documentation (.md files) is updated to reflect all architectural changes.
+

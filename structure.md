@@ -26,21 +26,23 @@ c:/xampp/htdocs/voting/
 │
 ├── backend/                        # Headless PHP REST API & Database Services
 │   ├── api/                        # JSON API Endpoints
+│   │   ├── .htaccess               # FastCGI Bearer authorization & CORS rules
+│   │   ├── admin.php               # Admin endpoints (/dashboard, /control, /results, /candidates, /voters)
 │   │   ├── auth.php                # Authentication (/login, /logout, /me)
-│   │   ├── voter.php               # Voter endpoints (/dashboard, /candidates, /cast, /profile)
-│   │   └── admin.php               # Admin endpoints (/dashboard, /control, /results, /candidates)
+│   │   ├── health.php              # Cloud health check & deployment diagnostic endpoint
+│   │   └── voter.php               # Voter endpoints (/dashboard, /candidates, /cast, /profile)
 │   │
 │   ├── config/                     # Configuration & Infrastructure
-│   │   ├── cors.php                # Cross-Origin Resource Sharing (CORS) headers
-│   │   └── database.php            # MySQL PDO connection singleton
+│   │   ├── cors.php                # Cross-Origin Resource Sharing (CORS) headers & JSON error handling
+│   │   └── database.php            # MySQL PDO connection singleton (Railway & XAMPP auto-detect)
 │   │
 │   ├── database/                   # Schema & Database Migrations
-│   │   ├── schema.sql              # Clean database schema definition
+│   │   ├── schema.sql              # Clean database schema definition with auto-init support
 │   │   └── voting_db_import.sql    # Complete SQL dump with positions, candidates & voters
 │   │
 │   ├── includes/                   # Core Server Utilities
 │   │   ├── api_auth.php            # Bearer token validation middleware
-│   │   ├── functions.php           # Business logic, schedule evaluators & result aggregation
+│   │   ├── functions.php           # Business logic, schedule evaluators & MySQL 8 compliant tallies
 │   │   ├── encryption.php          # AES-256-CBC ballot cryptographic functions
 │   │   ├── pdf_export.php          # Official PDF report generator & backup archiver
 │   │   └── fpdf.php                # Vector PDF rendering engine
@@ -51,7 +53,7 @@ c:/xampp/htdocs/voting/
 │   ├── index.html / login.html     # Unified Sign-in screen with glassmorphism & password toggle
 │   │
 │   ├── js/                         # Client Logic & Services
-│   │   ├── api.js                  # Dynamic API network client & token persistence
+│   │   ├── api.js                  # Dynamic API network client, non-JSON error catching & token persistence
 │   │   └── components.js           # Shared layout injector, responsive drawer & SVG icons
 │   │
 │   ├── assets/                     # Static Design Assets
@@ -63,7 +65,7 @@ c:/xampp/htdocs/voting/
 │   │   └── uploads/                # Candidate profile photos & uploaded graphics
 │   │
 │   ├── admin/                      # Administrative Single Page / Multi-Page Views
-│   │   ├── dashboard.html          # Admin analytics & metric cards
+│   │   ├── dashboard.html          # Admin analytics, metric cards & error resilience
 │   │   ├── voting_control.html     # Live status switcher (OPEN/CLOSED) & archival controls
 │   │   ├── candidates.html         # Candidate CRUD management & platform verification
 │   │   ├── voters.html             # Voter account registration, credential editing & ballot reset
@@ -78,7 +80,10 @@ c:/xampp/htdocs/voting/
 │
 ├── index.php                       # Root entry point (clean redirect to frontend/login.html)
 ├── Dockerfile                      # Production container recipe for Railway.app & cloud PaaS
+├── entrypoint.sh                   # Startup container initializer (MPM fix, port binding, permissions)
+├── railway.json                    # Railway deployment & builder configuration as code
 ├── .dockerignore                   # Docker build exclusions
+├── .gitattributes                  # Git line-ending normalization (LF for shell scripts)
 ├── RULES.md                        # Architecture & Implementation Rules
 ├── SKILL.md                        # Skill Specification
 ├── context.md                      # Comprehensive Project History & Technical Context
@@ -151,5 +156,22 @@ c:/xampp/htdocs/voting/
   - Sticky `.top-header` applies `padding-top: calc(14px + env(safe-area-inset-top, 0px))` clearing the native status bar, notch, and dynamic island.
   - Fixed `.mobile-bottom-nav` applies `padding-bottom: env(safe-area-inset-bottom, 0px)` keeping tabs above the native home indicator.
   - Main view container (`.content-body`) on mobile viewports (<900px) enforces `padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;` (64px navigation bar + 56px whitespace margin) guaranteeing that bottom cards, forms, and submit buttons (e.g., Save Changes, Review Ballot) are never cut off or obstructed by the navigation bar.
+
+### 3.6 Cloud Infrastructure, Docker & Database Provisioning
+- **Production Containerization (`Dockerfile`, `entrypoint.sh`, `railway.json`)**:
+  - Encapsulated in lightweight `php:8.2-apache` container with `pdo_mysql`.
+  - Dedicated pre-start script (`entrypoint.sh`) disables conflicting `mpm_event` and `mpm_worker` Apache modules, forcing `mpm_prefork` to eradicate `AH00534` crashes.
+  - Dynamically updates Apache's `ports.conf` and `<VirtualHost>` configuration to bind to Railway's assigned `$PORT` (defaulting to 8080).
+  - Explicitly configured with `"builder": "DOCKERFILE"` in `railway.json` for deterministic cloud builds.
+- **Zero-Config Database Discovery**:
+  - `backend/config/database.php` auto-detects Railway's `MYSQL_URL` and individual connection parameters (`MYSQLHOST`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLDATABASE`, `MYSQLPORT`), with seamless fallback to local XAMPP.
+  - Automatically provisions fresh database schemas and seed accounts from `backend/database/schema.sql` on virgin instances.
+- **MySQL 8.0 `ONLY_FULL_GROUP_BY` Resilience**:
+  - Timeline and position aggregations in `backend/includes/functions.php` utilize strict SQL subqueries with `MIN(created_at)` and explicit grouping, conforming strictly to modern MySQL 8.x standards.
+  - Injected session-level SQL mode adjustment into PDO connections (`SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));`).
+- **Clean JSON API Error Normalization**:
+  - Disabled `display_errors` in API routes and registered a global exception handler in `backend/config/cors.php`, ensuring all errors output standard JSON (`{"success": false, "error": "..."}`) with HTTP 500.
+  - Enhanced client-side `api.request()` in `frontend/js/api.js` to strip HTML error tags and throw readable exceptions if non-JSON output is ever returned.
+
 
 

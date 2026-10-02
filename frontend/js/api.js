@@ -1,5 +1,5 @@
 // Configure your published remote backend URL here (used by Capacitor mobile app or remote hosting)
-const REMOTE_API_URL = ''; // e.g. 'https://your-domain.com/backend/api'
+const REMOTE_API_URL = 'https://voting-production-5823.up.railway.app/backend/api'; // e.g. 'https://your-domain.com/backend/api'
 
 const frontendIndex = window.location.pathname.indexOf('/frontend/');
 const basePath = frontendIndex !== -1 ? window.location.pathname.substring(0, frontendIndex) : '';

@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Manage Voters — Tomorrow Vote</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        .voter-stat-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 20px 22px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.2s ease;
+        }
+        .voter-stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+        }
+        .voter-icon-wrap {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .btn-register-voter {
+            background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .btn-register-voter:hover {
+            background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+        }
+
+        /* Filter Pills */
+        .filter-pill {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+            padding: 7px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .filter-pill:hover {
+            border-color: #2563eb;
+            color: #2563eb;
+        }
+        .filter-pill.active {
+            background: #1d4ed8;
+            color: #ffffff;
+            border-color: #1d4ed8;
+        }
+
+        /* Table Card Container */
+        .roster-card {
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            overflow: hidden;
+        }
+        .roster-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 13px;
+        }
+        .roster-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.6px;
+            padding: 14px 20px;
+            border-bottom: 1.5px solid #e2e8f0;
+        }
+        .roster-table td {
+            padding: 14px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #1e293b;
+            vertical-align: middle;
+        }
+        .roster-table tr:last-child td {
+            border-bottom: none;
+        }
+        .roster-table tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        /* Status Badges */
+        .badge-voted {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .badge-pending {
+            background: #fef3c7;
+            color: #b45309;
+            border: 1px solid #fde68a;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Action Buttons */
+        .btn-action-icon {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            padding: 6px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-size: 12px;
+            font-weight: 700;
+            transition: all 0.15s ease;
+        }
+        .btn-action-edit {
+            color: #2563eb;
+        }
+        .btn-action-edit:hover {
+            background: #eff6ff;
+            border-color: #93c5fd;
+        }
+        .btn-action-reset {
+            color: #d97706;
+        }
+        .btn-action-reset:hover {
+            background: #fffbeb;
+            border-color: #fcd34d;
+        }
+        .btn-action-delete {
+            color: #dc2626;
+        }
+        .btn-action-delete:hover {
+            background: #fef2f2;
+            border-color: #fca5a5;
+        }
+
+        /* Modal Dialog Styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+        }
+        .modal-card {
+            background: #ffffff;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 28px;
+            box-sizing: border-box;
+        }
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+        .form-input, .form-select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #0f172a;
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            box-sizing: border-box;
+            background: #ffffff;
+            font-family: inherit;
+        }
+        .form-input:focus, .form-select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        /* Mobile Responsive Roster */
+        @media (max-width: 768px) {
+            .roster-table thead {
+                display: none;
+            }
+            .roster-table, .roster-table tbody, .roster-table tr, .roster-table td {
+                display: block;
+                width: 100%;
+            }
+            .roster-table tr {
+                background: #ffffff;
+                border-bottom: 8px solid #f1f5f9;
+                padding: 16px;
+                box-sizing: border-box;
+            }
+            .roster-table td {
+                padding: 6px 0;
+                border: none;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .roster-table td::before {
+                content: attr(data-label);
+                font-size: 11px;
+                font-weight: 800;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            .roster-table td.actions-cell {
+                margin-top: 12px;
+                padding-top: 12px;
+                border-top: 1px solid #f1f5f9;
+                justify-content: flex-end;
+                gap: 8px;
+            }
+            .roster-table td.actions-cell::before {
+                display: none;
+            }
+            .modal-overlay {
+                align-items: flex-end !important;
+                padding: 0 !important;
+            }
+            .modal-card {
+                border-radius: 24px 24px 0 0 !important;
+                max-height: 88vh !important;
+                padding: 22px 18px calc(30px + env(safe-area-inset-bottom, 0px)) 18px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="app-container"></div>
+
+    <!-- Add / Edit Voter Modal -->
+    <div id="voterModalOverlay" class="modal-overlay" onclick="handleVoterModalBackdrop(event)">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="voterModalTitle">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid #e2e8f0;">
+                <div>
+                    <h2 id="voterModalTitle" style="font-size: 20px; font-weight: 900; color: #0f172a; margin: 0;">Register New Voter</h2>
+                    <p id="voterModalSubtitle" style="font-size: 12px; color: #64748b; margin: 3px 0 0 0;">Create an institutional voter credentials profile</p>
+                </div>
+                <button type="button" onclick="closeVoterModal()" style="background: none; border: none; color: #64748b; cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <form id="voterForm" onsubmit="submitVoterForm(event)">
+                <input type="hidden" id="voterFormId" value="">
+
+                <!-- Student ID & Full Name -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="form-group">
+                        <label class="form-label" for="voterStudentIdInput">Student ID <span style="color: #dc2626;">*</span></label>
+                        <input type="text" id="voterStudentIdInput" class="form-input" placeholder="e.g. 2026-0042" required oninput="handleStudentIdInput(this.value)">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="voterFullNameInput">Full Name <span style="color: #dc2626;">*</span></label>
+                        <input type="text" id="voterFullNameInput" class="form-input" placeholder="e.g. Juan Dela Cruz" required>
+                    </div>
+                </div>
+
+                <!-- Username & Email -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="form-group">
+                        <label class="form-label" for="voterUsernameInput">Username</label>
+                        <input type="text" id="voterUsernameInput" class="form-input" placeholder="Defaults to Student ID">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="voterEmailInput">Email Address</label>
+                        <input type="email" id="voterEmailInput" class="form-input" placeholder="Defaults to student email">
+                    </div>
+                </div>
+
+                <!-- Year Level & Section -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="form-group">
+                        <label class="form-label" for="voterGradeSelect">Year / Grade Level</label>
+                        <select id="voterGradeSelect" class="form-select">
+                            <option value="1st Year">1st Year</option>
+                            <option value="2nd Year">2nd Year</option>
+                            <option value="3rd Year">3rd Year</option>
+                            <option value="4th Year">4th Year</option>
+                            <option value="Grade 11">Grade 11</option>
+                            <option value="Grade 12">Grade 12</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="voterSectionInput">Section / Department</label>
+                        <input type="text" id="voterSectionInput" class="form-input" placeholder="e.g. BSCS-1A">
+                    </div>
+                </div>
+
+                <!-- Phone & Password -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="form-group">
+                        <label class="form-label" for="voterPhoneInput">Contact Phone</label>
+                        <input type="tel" id="voterPhoneInput" class="form-input" placeholder="e.g. 09171234567">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="voterPasswordInput" id="voterPasswordLabel">Password</label>
+                        <input type="text" id="voterPasswordInput" class="form-input" placeholder="Defaults to Student ID">
+                        <div id="voterPasswordHelp" style="font-size: 11px; color: #64748b; margin-top: 4px;">Leave empty to keep default (Student ID).</div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 18px; border-top: 1px solid #e2e8f0;">
+                    <button type="button" onclick="closeVoterModal()" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 11px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button type="submit" id="voterSubmitBtn" style="background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%); color: #ffffff; border: none; padding: 11px 24px; border-radius: 10px; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <span id="voterSubmitBtnText">Save Voter</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script>
+        (async function() {
+            const user = await initPage('admin', 'voters');
+            if (!user) return;
+
+            let allVoters = [];
+            let metrics = { total: 0, voted: 0, pending: 0, turnout_pct: 0 };
+            let activeStatusFilter = 'all';
+            let searchQuery = '';
+
+            const render = async () => {
+                const res = await api.admin.voters();
+                allVoters = res.voters || [];
+                metrics = res.metrics || {
+                    total: allVoters.length,
+                    voted: allVoters.filter(v => v.has_voted).length,
+                    pending: allVoters.filter(v => !v.has_voted).length,
+                    turnout_pct: allVoters.length > 0 ? Math.round((allVoters.filter(v => v.has_voted).length / allVoters.length) * 100) : 0
+                };
+                renderUI();
+            };
+
+            const renderUI = () => {
+                const filtered = allVoters.filter(v => {
+                    // Status filter
+                    if (activeStatusFilter === 'voted' && !v.has_voted) return false;
+                    if (activeStatusFilter === 'pending' && v.has_voted) return false;
+
+                    // Search filter
+                    if (searchQuery) {
+                        const q = searchQuery.toLowerCase();
+                        const idMatch = (v.student_id || '').toLowerCase().includes(q);
+                        const nameMatch = (v.full_name || '').toLowerCase().includes(q);
+                        const userMatch = (v.username || '').toLowerCase().includes(q);
+                        const emailMatch = (v.email || '').toLowerCase().includes(q);
+                        const secMatch = (v.section || '').toLowerCase().includes(q);
+                        return idMatch || nameMatch || userMatch || emailMatch || secMatch;
+                    }
+                    return true;
+                });
+
+                const html = `
+                    <div class="animate-fade-in-up">
+                        <!-- Top Header with Title and Add Button -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 14px;">
+                            <div>
+                                <h1 style="font-size: 26px; font-weight: 900; margin: 0 0 4px 0;">Voter Management</h1>
+                                <p style="font-size: 14px; color: #64748b; margin: 0; font-weight: 500;">Manage registered student voter accounts, credentials, and live turnout records</p>
+                            </div>
+                            <button type="button" class="btn-register-voter" onclick="openAddVoterModal()">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                <span>Register New Voter</span>
+                            </button>
+                        </div>
+
+                        <!-- Metrics Grid -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                            <!-- Total Voters -->
+                            <div class="voter-stat-card">
+                                <div>
+                                    <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Total Registered</div>
+                                    <div style="font-size: 28px; font-weight: 900; color: #0f172a; margin-top: 4px;">${metrics.total}</div>
+                                    <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-top: 2px;">Eligible Voters</div>
+                                </div>
+                                <div class="voter-icon-wrap" style="background: #eff6ff; color: #2563eb;">
+                                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                </div>
+                            </div>
+
+                            <!-- Voted -->
+                            <div class="voter-stat-card">
+                                <div>
+                                    <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Ballots Cast</div>
+                                    <div style="font-size: 28px; font-weight: 900; color: #16a34a; margin-top: 4px;">${metrics.voted}</div>
+                                    <div style="font-size: 11px; color: #16a34a; font-weight: 600; margin-top: 2px;">Verified Votes</div>
+                                </div>
+                                <div class="voter-icon-wrap" style="background: #f0fdf4; color: #16a34a;">
+                                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                            </div>
+
+                            <!-- Pending -->
+                            <div class="voter-stat-card">
+                                <div>
+                                    <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Pending Ballots</div>
+                                    <div style="font-size: 28px; font-weight: 900; color: #d97706; margin-top: 4px;">${metrics.pending}</div>
+                                    <div style="font-size: 11px; color: #d97706; font-weight: 600; margin-top: 2px;">Yet to Submit</div>
+                                </div>
+                                <div class="voter-icon-wrap" style="background: #fffbeb; color: #d97706;">
+                                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                </div>
+                            </div>
+
+                            <!-- Turnout Rate -->
+                            <div class="voter-stat-card">
+                                <div>
+                                    <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Turnout Rate</div>
+                                    <div style="font-size: 28px; font-weight: 900; color: #2563eb; margin-top: 4px;">${metrics.turnout_pct}%</div>
+                                    <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-top: 2px;">Participation Rate</div>
+                                </div>
+                                <div class="voter-icon-wrap" style="background: #eff6ff; color: #2563eb;">
+                                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filter and Search Toolbar -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 20px; flex-wrap: wrap;">
+                            <!-- Filter Pills -->
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button type="button" class="filter-pill ${activeStatusFilter === 'all' ? 'active' : ''}" onclick="setStatusFilter('all')">
+                                    All Voters (${metrics.total})
+                                </button>
+                                <button type="button" class="filter-pill ${activeStatusFilter === 'voted' ? 'active' : ''}" onclick="setStatusFilter('voted')">
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                    Voted (${metrics.voted})
+                                </button>
+                                <button type="button" class="filter-pill ${activeStatusFilter === 'pending' ? 'active' : ''}" onclick="setStatusFilter('pending')">
+                                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                    Pending (${metrics.pending})
+                                </button>
+                            </div>
+
+                            <!-- Search Input -->
+                            <div style="position: relative; width: 100%; max-width: 320px;">
+                                <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; display: flex; align-items: center; pointer-events: none;">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                </span>
+                                <input type="text" id="voterSearchInput" value="${escapeHtml(searchQuery)}" oninput="handleSearchInput(this.value)" placeholder="Search name, ID, or section..." style="width: 100%; padding: 9px 12px 9px 36px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-size: 13px; color: #0f172a; outline: none; box-sizing: border-box; background: #ffffff;">
+                            </div>
+                        </div>
+
+                        <!-- Voter Roster Table -->
+                        <div class="roster-card">
+                            ${filtered.length === 0 ? `
+                                <div style="padding: 48px; text-align: center;">
+                                    <div style="width: 52px; height: 52px; border-radius: 50%; background: #f1f5f9; color: #94a3b8; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto;">
+                                        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                    </div>
+                                    <h3 style="font-size: 16px; font-weight: 800; color: #334155; margin: 0 0 4px 0;">No Voters Found</h3>
+                                    <p style="font-size: 13px; color: #64748b; margin: 0;">Try adjusting your search query or status filter.</p>
+                                </div>
+                            ` : `
+                                <table class="roster-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Student ID</th>
+                                            <th>Voter Full Name</th>
+                                            <th>Account / Email</th>
+                                            <th>Year & Section</th>
+                                            <th>Status</th>
+                                            <th style="text-align: right;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${filtered.map(v => `
+                                            <tr>
+                                                <td data-label="Student ID">
+                                                    <span style="font-family: monospace; font-weight: 800; font-size: 13px; color: #1e40af; background: #eff6ff; padding: 3px 8px; border-radius: 6px;">
+                                                        ${escapeHtml(v.student_id)}
+                                                    </span>
+                                                </td>
+                                                <td data-label="Full Name">
+                                                    <div style="font-weight: 800; color: #0f172a;">${escapeHtml(v.full_name)}</div>
+                                                    <div style="font-size: 11px; color: #64748b;">${v.phone ? escapeHtml(v.phone) : 'No phone linked'}</div>
+                                                </td>
+                                                <td data-label="Account">
+                                                    <div style="font-weight: 600; color: #334155;">${escapeHtml(v.username)}</div>
+                                                    <div style="font-size: 11px; color: #64748b;">${escapeHtml(v.email || '—')}</div>
+                                                </td>
+                                                <td data-label="Year & Section">
+                                                    <span style="font-weight: 700; color: #334155;">${escapeHtml(v.grade_level || '1st Year')}</span>
+                                                    ${v.section ? `<span style="font-size: 11px; color: #64748b; margin-left: 4px;">(${escapeHtml(v.section)})</span>` : ''}
+                                                </td>
+                                                <td data-label="Status">
+                                                    ${v.has_voted ? `
+                                                        <span class="badge-voted">
+                                                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                            Voted
+                                                        </span>
+                                                    ` : `
+                                                        <span class="badge-pending">
+                                                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                                            Pending
+                                                        </span>
+                                                    `}
+                                                </td>
+                                                <td class="actions-cell" style="text-align: right;">
+                                                    <div style="display: inline-flex; gap: 6px;">
+                                                        <button type="button" class="btn-action-icon btn-action-edit" onclick="openEditVoterModal(${v.id})" title="Edit Voter Details">
+                                                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                            <span>Edit</span>
+                                                        </button>
+                                                        ${v.has_voted ? `
+                                                            <button type="button" class="btn-action-icon btn-action-reset" onclick="resetBallot(${v.id}, '${escapeHtml(v.full_name).replace(/'/g, "\\'")}')" title="Reset ballot so this voter can recast vote">
+                                                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"></path><path d="M3 13a9 9 0 1 0 3-7.7L3 8"></path></svg>
+                                                                <span>Reset Ballot</span>
+                                                            </button>
+                                                        ` : ''}
+                                                        <button type="button" class="btn-action-icon btn-action-delete" onclick="deleteVoter(${v.id}, '${escapeHtml(v.full_name).replace(/'/g, "\\'")}')" title="Permanently delete voter account">
+                                                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                            <span>Delete</span>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            `}
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('pageContent').innerHTML = html;
+            };
+
+            function escapeHtml(str) {
+                if (!str) return '';
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;');
+            }
+
+            window.setStatusFilter = (status) => {
+                activeStatusFilter = status;
+                renderUI();
+            };
+
+            window.handleSearchInput = (val) => {
+                searchQuery = val;
+                renderUI();
+                const searchEl = document.getElementById('voterSearchInput');
+                if (searchEl) {
+                    searchEl.focus();
+                    searchEl.setSelectionRange(searchEl.value.length, searchEl.value.length);
+                }
+            };
+
+            window.handleStudentIdInput = (val) => {
+                const id = document.getElementById('voterFormId').value;
+                if (!id) {
+                    // For new voters, default username and email if blank
+                    const userField = document.getElementById('voterUsernameInput');
+                    const emailField = document.getElementById('voterEmailInput');
+                    if (userField && !userField.dataset.customized) {
+                        userField.value = val;
+                    }
+                    if (emailField && !emailField.dataset.customized) {
+                        emailField.value = val ? val.toLowerCase() + '@tomorrowvote.com' : '';
+                    }
+                }
+            };
+
+            window.openAddVoterModal = () => {
+                document.getElementById('voterModalTitle').innerText = 'Register New Voter';
+                document.getElementById('voterModalSubtitle').innerText = 'Create an institutional voter credentials profile';
+                document.getElementById('voterSubmitBtnText').innerText = 'Register Voter';
+                document.getElementById('voterFormId').value = '';
+                document.getElementById('voterStudentIdInput').value = '';
+                document.getElementById('voterFullNameInput').value = '';
+                document.getElementById('voterUsernameInput').value = '';
+                document.getElementById('voterUsernameInput').dataset.customized = '';
+                document.getElementById('voterEmailInput').value = '';
+                document.getElementById('voterEmailInput').dataset.customized = '';
+                document.getElementById('voterGradeSelect').value = '1st Year';
+                document.getElementById('voterSectionInput').value = '';
+                document.getElementById('voterPhoneInput').value = '';
+                document.getElementById('voterPasswordInput').value = '';
+                document.getElementById('voterPasswordLabel').innerText = 'Default Password';
+                document.getElementById('voterPasswordHelp').innerText = 'Leave empty to set password equal to Student ID.';
+
+                openVoterModal();
+            };
+
+            window.openEditVoterModal = (id) => {
+                const voter = allVoters.find(v => v.id == id);
+                if (!voter) return;
+
+                document.getElementById('voterModalTitle').innerText = 'Edit Voter Details';
+                document.getElementById('voterModalSubtitle').innerText = 'Update student credentials, section, or password';
+                document.getElementById('voterSubmitBtnText').innerText = 'Save Changes';
+                document.getElementById('voterFormId').value = voter.id;
+                document.getElementById('voterStudentIdInput').value = voter.student_id;
+                document.getElementById('voterFullNameInput').value = voter.full_name;
+                document.getElementById('voterUsernameInput').value = voter.username;
+                document.getElementById('voterUsernameInput').dataset.customized = '1';
+                document.getElementById('voterEmailInput').value = voter.email || '';
+                document.getElementById('voterEmailInput').dataset.customized = '1';
+                document.getElementById('voterGradeSelect').value = voter.grade_level || '1st Year';
+                document.getElementById('voterSectionInput').value = voter.section || '';
+                document.getElementById('voterPhoneInput').value = voter.phone || '';
+                document.getElementById('voterPasswordInput').value = '';
+                document.getElementById('voterPasswordLabel').innerText = 'Change Password (Optional)';
+                document.getElementById('voterPasswordHelp').innerText = 'Leave empty to keep existing password unchanged.';
+
+                openVoterModal();
+            };
+
+            function openVoterModal() {
+                const modal = document.getElementById('voterModalOverlay');
+                modal.style.display = 'flex';
+                requestAnimationFrame(() => modal.classList.add('active'));
+                document.body.style.overflow = 'hidden';
+            }
+
+            window.closeVoterModal = () => {
+                const modal = document.getElementById('voterModalOverlay');
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+                setTimeout(() => { modal.style.display = 'none'; }, 260);
+            };
+
+            window.handleVoterModalBackdrop = (e) => {
+                if (e.target.id === 'voterModalOverlay') {
+                    closeVoterModal();
+                }
+            };
+
+            window.submitVoterForm = async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('voterFormId').value;
+                const student_id = document.getElementById('voterStudentIdInput').value.trim();
+                const full_name = document.getElementById('voterFullNameInput').value.trim();
+                const username = document.getElementById('voterUsernameInput').value.trim();
+                const email = document.getElementById('voterEmailInput').value.trim();
+                const grade_level = document.getElementById('voterGradeSelect').value;
+                const section = document.getElementById('voterSectionInput').value.trim();
+                const phone = document.getElementById('voterPhoneInput').value.trim();
+                const password = document.getElementById('voterPasswordInput').value;
+
+                if (!student_id || !full_name) {
+                    alert('Student ID and Full Name are required.');
+                    return;
+                }
+
+                const payload = {
+                    student_id,
+                    full_name,
+                    username,
+                    email,
+                    grade_level,
+                    section,
+                    phone
+                };
+                if (password) {
+                    payload.password = password;
+                }
+
+                const submitBtn = document.getElementById('voterSubmitBtn');
+                submitBtn.disabled = true;
+
+                try {
+                    if (id) {
+                        payload.id = parseInt(id);
+                        await api.admin.editVoter(payload);
+                    } else {
+                        await api.admin.addVoter(payload);
+                    }
+                    closeVoterModal();
+                    await render();
+                } catch (err) {
+                    alert('Error saving voter account: ' + (err.message || 'Server error.'));
+                } finally {
+                    submitBtn.disabled = false;
+                }
+            };
+
+            window.resetBallot = async (id, name) => {
+                if (confirm(`Are you sure you want to reset the ballot for "${name}"?\n\nThis will clear their cast vote records from the election count and allow them to vote again.`)) {
+                    try {
+                        await api.admin.resetVoterBallot(id);
+                        await render();
+                    } catch (err) {
+                        alert('Error resetting voter ballot: ' + (err.message || 'Server error.'));
+                    }
+                }
+            };
+
+            window.deleteVoter = async (id, name) => {
+                if (confirm(`Are you sure you want to permanently delete voter "${name}"?\n\nThis will remove their account and any associated vote records.`)) {
+                    try {
+                        await api.admin.deleteVoter(id);
+                        await render();
+                    } catch (err) {
+                        alert('Error deleting voter: ' + (err.message || 'Server error.'));
+                    }
+                }
+            };
+
+            render();
+        })();
+    </script>
+</body>
+</html>

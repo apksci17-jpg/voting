@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Voter Profile — Tomorrow Vote</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        .profile-container {
+            max-width: 640px;
+            background: #ffffff;
+            border-radius: 18px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            overflow: hidden;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 12px;
+            font-weight: 800;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+        .form-control[readonly] {
+            background-color: #f8fafc;
+            color: #64748b;
+            border-color: #e2e8f0;
+            cursor: not-allowed;
+        }
+        .btn-save-profile {
+            background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+            color: #ffffff;
+            border: none;
+            padding: 13px 28px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            transition: all 0.2s ease;
+        }
+        .btn-save-profile:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+        }
+        @media (max-width: 640px) {
+            .profile-card-body {
+                padding: 20px 18px !important;
+            }
+            .btn-save-profile {
+                width: 100%;
+                justify-content: center;
+                padding: 14px 20px;
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="app-container"></div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script>
+        (async function() {
+            const user = await initPage('voter', 'profile');
+            if (!user) return;
+
+            try {
+                const res = await api.voter.profile();
+                if (res.success) {
+                    const content = document.getElementById('pageContent');
+                    
+                    const html = `
+                        <div class="animate-fade-in-up">
+                            <!-- Header Banner -->
+                            <div style="margin-bottom: 24px;">
+                                <h1 style="font-size: 26px; font-weight: 900; margin: 0 0 4px 0;">Student Profile</h1>
+                                <p style="font-size: 14px; color: #64748b; margin: 0;">View verified credentials and update your display name</p>
+                            </div>
+
+                            <div class="profile-container">
+                                <!-- Card Top Bar -->
+                                <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 16px;">
+                                    <div style="width: 56px; height: 56px; border-radius: 50%; background: #ffffff; border: 2px solid #bfdbfe; display: flex; align-items: center; justify-content: center; color: #2563eb; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 18px; font-weight: 900; color: #0f172a;">${res.profile.full_name}</div>
+                                        <div style="font-size: 12px; font-weight: 700; color: #2563eb; display: inline-flex; align-items: center; gap: 6px; margin-top: 2px;">
+                                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                            Verified Registered Voter
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Form Content -->
+                                <div class="profile-card-body" style="padding: 28px;">
+                                    <form id="profileForm">
+                                        <div class="form-group">
+                                            <label class="form-label" for="student_id">Student Identification Number</label>
+                                            <div style="position: relative; display: flex; align-items: center;">
+                                                <input type="text" id="student_id" class="form-control" value="${res.profile.student_id}" readonly>
+                                                <div style="position: absolute; right: 14px; font-size: 11px; font-weight: 800; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">
+                                                    LOCKED
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label class="form-label" for="email">Institutional Email</label>
+                                            <input type="email" id="email" class="form-control" value="${res.profile.email}" readonly>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label class="form-label" for="full_name">Registered Full Name</label>
+                                            <input type="text" id="full_name" name="full_name" class="form-control" value="${res.profile.full_name}" required>
+                                        </div>
+
+                                        <div style="margin-top: 28px; display: flex; align-items: center; gap: 14px;">
+                                            <button type="submit" class="btn-save-profile" id="saveBtn">
+                                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                                                <span>Save Changes</span>
+                                            </button>
+                                            <div id="message" style="font-size: 13px; font-weight: 700;"></div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    content.innerHTML = html;
+
+                    document.getElementById('profileForm').addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        const btn = document.getElementById('saveBtn');
+                        const msg = document.getElementById('message');
+                        btn.disabled = true;
+                        btn.innerHTML = `<span>Saving...</span>`;
+                        msg.innerHTML = '';
+                        
+                        const fullName = document.getElementById('full_name').value.trim();
+                        
+                        try {
+                            const updateRes = await api.voter.updateProfile(fullName);
+                            if (updateRes.success) {
+                                msg.innerHTML = '<span style="color: #16a34a; display: inline-flex; align-items: center; gap: 4px;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Profile updated successfully!</span>';
+                            } else {
+                                msg.innerHTML = '<span style="color: #dc2626;">' + (updateRes.error || 'Failed to update') + '</span>';
+                            }
+                        } catch (err) {
+                            msg.innerHTML = '<span style="color: #dc2626;">Error saving changes.</span>';
+                        } finally {
+                            btn.disabled = false;
+                            btn.innerHTML = `
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                                <span>Save Changes</span>
+                            `;
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to load profile", error);
+                document.getElementById('pageContent').innerHTML = '<p style="color:red;">Error loading profile.</p>';
+            }
+        })();
+    </script>
+</body>
+</html>

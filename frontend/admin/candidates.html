@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Manage Candidates — Tomorrow Vote</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        .cand-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 22px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+        .cand-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 28px rgba(0,0,0,0.07);
+            border-color: #cbd5e1;
+        }
+        .badge-position {
+            font-size: 11px;
+            font-weight: 800;
+            color: #1d4ed8;
+            background: #dbeafe;
+            padding: 4px 10px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
+        }
+        .badge-year {
+            font-size: 11px;
+            font-weight: 700;
+            color: #475569;
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        .btn-add-cand {
+            background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+            transition: all 0.2s ease;
+        }
+        .btn-add-cand:hover {
+            background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.4);
+        }
+
+        /* Modal Dialog Styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+        }
+        .modal-card {
+            background: #ffffff;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 580px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 28px;
+            box-sizing: border-box;
+        }
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #0f172a;
+            outline: none;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            box-sizing: border-box;
+            background: #ffffff;
+            font-family: inherit;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+        .form-textarea {
+            resize: vertical;
+            min-height: 90px;
+            line-height: 1.5;
+        }
+
+        .filter-btn {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .filter-btn:hover {
+            border-color: #2563eb;
+            color: #2563eb;
+        }
+        .filter-btn.active {
+            background: #1d4ed8;
+            color: #ffffff;
+            border-color: #1d4ed8;
+        }
+
+        @media (max-width: 768px) {
+            .modal-overlay {
+                align-items: flex-end !important;
+                padding: 0 !important;
+            }
+            .modal-card {
+                border-radius: 24px 24px 0 0 !important;
+                max-height: 88vh !important;
+                padding: 22px 18px calc(30px + env(safe-area-inset-bottom, 0px)) 18px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="app-container"></div>
+
+    <!-- Candidate Add / Edit Modal Dialog -->
+    <div id="candModalOverlay" class="modal-overlay" onclick="handleCandModalBackdrop(event)">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="candModalTitle">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid #e2e8f0;">
+                <div>
+                    <h2 id="candModalTitle" style="font-size: 20px; font-weight: 900; color: #0f172a; margin: 0;">Add New Candidate</h2>
+                    <p id="candModalSubtitle" style="font-size: 12px; color: #64748b; margin: 3px 0 0 0;">Enter nominee details and campaign platform</p>
+                </div>
+                <button type="button" onclick="closeCandFormModal()" style="background: none; border: none; color: #64748b; cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <form id="candForm" onsubmit="submitCandForm(event)">
+                <input type="hidden" id="candFormId" value="">
+
+                <!-- Photo Upload & Preview -->
+                <div style="display: flex; align-items: center; gap: 18px; margin-bottom: 20px; background: #f8fafc; padding: 14px; border-radius: 14px; border: 1px dashed #cbd5e1;">
+                    <div style="position: relative; width: 68px; height: 68px; border-radius: 50%; overflow: hidden; background: #ffffff; border: 2.5px solid #bfdbfe; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.06);">
+                        <img id="candPhotoPreview" src="../assets/uploads/default.svg" alt="Preview" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <label class="form-label" style="margin-bottom: 4px;">Candidate Photo</label>
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <input type="file" id="candPhotoInput" accept="image/*" style="display: none;" onchange="handleCandPhotoChange(event)">
+                            <button type="button" onclick="document.getElementById('candPhotoInput').click()" style="background: #ffffff; border: 1.5px solid #cbd5e1; color: #1e293b; padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                Choose Image...
+                            </button>
+                            <button type="button" onclick="resetCandPhoto()" style="background: none; border: none; color: #dc2626; font-size: 11px; font-weight: 700; cursor: pointer;">Remove</button>
+                        </div>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 4px;">JPG, PNG, WebP or SVG. Max 5MB.</div>
+                    </div>
+                </div>
+
+                <!-- Full Name -->
+                <div class="form-group">
+                    <label class="form-label" for="candNameInput">Full Candidate Name <span style="color: #dc2626;">*</span></label>
+                    <input type="text" id="candNameInput" class="form-input" placeholder="e.g. Maria Santos" required>
+                </div>
+
+                <!-- Position & Year Level (2 Columns) -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                    <div class="form-group">
+                        <label class="form-label" for="candPositionSelect">Target Position <span style="color: #dc2626;">*</span></label>
+                        <select id="candPositionSelect" class="form-select" required>
+                            <option value="">Select Position...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="candYearInput">Year / Grade Level</label>
+                        <select id="candYearInput" class="form-select">
+                            <option value="1st Year">1st Year</option>
+                            <option value="2nd Year">2nd Year</option>
+                            <option value="3rd Year">3rd Year</option>
+                            <option value="4th Year">4th Year</option>
+                            <option value="Grade 11">Grade 11</option>
+                            <option value="Grade 12">Grade 12</option>
+                            <option value="Senior Level">Senior Level</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Platform -->
+                <div class="form-group">
+                    <label class="form-label" for="candPlatformTextarea">Advocacy & Campaign Platform</label>
+                    <textarea id="candPlatformTextarea" class="form-textarea" placeholder="Outline the candidate's core priorities, policy reforms, student advocacy points, or campaign manifesto..."></textarea>
+                </div>
+
+                <!-- Modal Actions -->
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; padding-top: 18px; border-top: 1px solid #e2e8f0;">
+                    <button type="button" onclick="closeCandFormModal()" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 11px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button type="submit" id="candSubmitBtn" style="background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%); color: #ffffff; border: none; padding: 11px 24px; border-radius: 10px; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <span id="candSubmitBtnText">Save Candidate</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/components.js"></script>
+    <script>
+        (async function() {
+            const user = await initPage('admin', 'candidates');
+            if (!user) return;
+
+            let cachedPositions = [];
+            let allCandidates = [];
+            let activeFilter = 'all';
+            let uploadedBase64 = null;
+
+            // Load positions for the modal select
+            try {
+                const posRes = await api.admin.positions();
+                cachedPositions = posRes.positions || [];
+                populatePositionSelect(cachedPositions);
+            } catch (e) {
+                console.error('Failed to load positions', e);
+            }
+
+            function populatePositionSelect(positions) {
+                const sel = document.getElementById('candPositionSelect');
+                if (!sel) return;
+                sel.innerHTML = '<option value="">Select Position...</option>' + 
+                    positions.map(p => `<option value="${p.id}">${p.position_name}</option>`).join('');
+            }
+
+            const render = async () => {
+                const res = await api.admin.candidates();
+                allCandidates = res.candidates || [];
+                renderCandidateGrid();
+            };
+
+            const renderCandidateGrid = () => {
+                const filtered = activeFilter === 'all' 
+                    ? allCandidates 
+                    : allCandidates.filter(c => String(c.position_id) === String(activeFilter));
+
+                // Generate position filter pills
+                let filterHtml = `
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
+                        <button type="button" class="filter-btn ${activeFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">
+                            All Positions (${allCandidates.length})
+                        </button>
+                `;
+                cachedPositions.forEach(p => {
+                    const count = allCandidates.filter(c => c.position_id == p.id).length;
+                    filterHtml += `
+                        <button type="button" class="filter-btn ${activeFilter == p.id ? 'active' : ''}" onclick="setFilter('${p.id}')">
+                            ${p.position_name} (${count})
+                        </button>
+                    `;
+                });
+                filterHtml += `</div>`;
+
+                let html = `
+                    <div class="animate-fade-in-up">
+                        <!-- Top Header with Actions -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 14px;">
+                            <div>
+                                <h1 style="font-size: 26px; font-weight: 900; margin: 0 0 4px 0;">Official Candidates</h1>
+                                <p style="font-size: 14px; color: #64748b; margin: 0; font-weight: 500;">Add, manage, and verify official election nominees and platforms</p>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                <div style="display: flex; align-items: center; gap: 8px; background: #ffffff; padding: 8px 16px; border-radius: 12px; border: 1px solid #e2e8f0; font-size: 13px; font-weight: 700; color: #334155;">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                    <span>Total: <strong>${allCandidates.length}</strong> Nominees</span>
+                                </div>
+                                <button type="button" class="btn-add-cand" onclick="openAddCandidateModal()">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                    <span>Add Candidate</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        ${filterHtml}
+                `;
+
+                if (filtered.length === 0) {
+                    html += `
+                        <div style="background: #ffffff; border-radius: 16px; padding: 48px; text-align: center; border: 1px dashed #cbd5e1;">
+                            <div style="width: 56px; height: 56px; border-radius: 50%; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
+                                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+                            </div>
+                            <h3 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 0 0 6px 0;">No Candidates Found</h3>
+                            <p style="font-size: 13px; color: #64748b; margin: 0 0 18px 0;">${activeFilter === 'all' ? 'No candidates have been registered yet.' : 'No candidates registered under this position.'}</p>
+                            <button type="button" class="btn-add-cand" onclick="openAddCandidateModal('${activeFilter !== 'all' ? activeFilter : ''}')">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                <span>Register Candidate Now</span>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    const adminCandMap = {};
+                    html += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">`;
+                    for (const cand of filtered) {
+                        adminCandMap[cand.id] = cand;
+                        html += `
+                            <div class="cand-card animate-scale-in">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+                                        <span class="badge-position">${cand.position_name}</span>
+                                        <span class="badge-year">${cand.year_level || 'General'}</span>
+                                    </div>
+                                    <div style="display: flex; gap: 14px; align-items: center; margin-bottom: 14px;">
+                                        <div style="width: 58px; height: 58px; border-radius: 50%; background: #f1f5f9; overflow: hidden; flex-shrink: 0; border: 2.5px solid #bfdbfe; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.12);">
+                                            <img src="${cand.profile_image ? '../assets/uploads/' + cand.profile_image : '../assets/uploads/default.svg'}" onerror="this.onerror=null; this.src='../assets/uploads/default.svg'" style="width: 100%; height: 100%; object-fit: cover;">
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 17px; font-weight: 900; color: #0f172a; line-height: 1.3;">${cand.candidate_name}</div>
+                                            <div style="font-size: 12px; color: #16a34a; font-weight: 700; margin-top: 2px; display: inline-flex; align-items: center; gap: 4px;">
+                                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                Certified Nominee
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="font-size: 13px; color: #475569; background: #f8fafc; padding: 12px 14px; border-radius: 10px; border: 1px solid #e2e8f0; margin-bottom: 16px; line-height: 1.5; min-height: 54px;">
+                                        <strong style="color: #0f172a; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Advocacy & Platform</strong>
+                                        ${cand.platform ? (cand.platform.length > 95 ? cand.platform.substring(0, 95) + '...' : cand.platform) : '<em>No platform description provided.</em>'}
+                                    </div>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid #f1f5f9; gap: 8px; flex-wrap: wrap;">
+                                    <button type="button" onclick="openAdminCandModal(${cand.id})" style="background: none; border: none; font-size: 12px; font-weight: 800; color: #2563eb; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 6px 0;">
+                                        <span>View Info</span>
+                                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                                    </button>
+                                    <div style="display: flex; gap: 6px;">
+                                        <button type="button" onclick="openEditCandidateModal(${cand.id})" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all 0.15s ease;">
+                                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                            Edit
+                                        </button>
+                                        <button type="button" onclick="deleteCand(${cand.id}, '${cand.candidate_name.replace(/'/g, "\\'")}')" style="background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: all 0.15s ease;">
+                                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    html += `</div>`;
+
+                    window.openAdminCandModal = (id) => {
+                        const candidate = adminCandMap[id];
+                        if (candidate) {
+                            showCandidateModal(candidate, { role: 'admin' });
+                        }
+                    };
+                }
+                html += `</div>`;
+
+                document.getElementById('pageContent').innerHTML = html;
+            };
+
+            window.setFilter = (filter) => {
+                activeFilter = filter;
+                renderCandidateGrid();
+            };
+
+            window.openAddCandidateModal = (preselectPosId = '') => {
+                document.getElementById('candModalTitle').innerText = 'Add New Candidate';
+                document.getElementById('candModalSubtitle').innerText = 'Register an official nominee and their platform';
+                document.getElementById('candSubmitBtnText').innerText = 'Add Candidate';
+                document.getElementById('candFormId').value = '';
+                document.getElementById('candNameInput').value = '';
+                document.getElementById('candPositionSelect').value = preselectPosId || '';
+                document.getElementById('candYearInput').value = '1st Year';
+                document.getElementById('candPlatformTextarea').value = '';
+                document.getElementById('candPhotoPreview').src = '../assets/uploads/default.svg';
+                uploadedBase64 = null;
+
+                openCandModal();
+            };
+
+            window.openEditCandidateModal = (id) => {
+                const cand = allCandidates.find(c => c.id == id);
+                if (!cand) return;
+
+                document.getElementById('candModalTitle').innerText = 'Edit Candidate Profile';
+                document.getElementById('candModalSubtitle').innerText = 'Update nominee info, position, or advocacy';
+                document.getElementById('candSubmitBtnText').innerText = 'Save Changes';
+                document.getElementById('candFormId').value = cand.id;
+                document.getElementById('candNameInput').value = cand.candidate_name;
+                document.getElementById('candPositionSelect').value = cand.position_id;
+                document.getElementById('candYearInput').value = cand.year_level || '1st Year';
+                document.getElementById('candPlatformTextarea').value = cand.platform || '';
+                document.getElementById('candPhotoPreview').src = cand.profile_image ? '../assets/uploads/' + cand.profile_image : '../assets/uploads/default.svg';
+                uploadedBase64 = null;
+
+                openCandModal();
+            };
+
+            function openCandModal() {
+                const modal = document.getElementById('candModalOverlay');
+                modal.style.display = 'flex';
+                requestAnimationFrame(() => modal.classList.add('active'));
+                document.body.style.overflow = 'hidden';
+            }
+
+            window.closeCandFormModal = () => {
+                const modal = document.getElementById('candModalOverlay');
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+                setTimeout(() => { modal.style.display = 'none'; }, 260);
+            };
+
+            window.handleCandModalBackdrop = (e) => {
+                if (e.target.id === 'candModalOverlay') {
+                    closeCandFormModal();
+                }
+            };
+
+            window.handleCandPhotoChange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                if (!file.type.startsWith('image/')) {
+                    alert('Please select a valid image file (JPG, PNG, WebP).');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    uploadedBase64 = event.target.result;
+                    document.getElementById('candPhotoPreview').src = uploadedBase64;
+                };
+                reader.readAsDataURL(file);
+            };
+
+            window.resetCandPhoto = () => {
+                uploadedBase64 = '';
+                document.getElementById('candPhotoInput').value = '';
+                document.getElementById('candPhotoPreview').src = '../assets/uploads/default.svg';
+            };
+
+            window.submitCandForm = async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('candFormId').value;
+                const candidate_name = document.getElementById('candNameInput').value.trim();
+                const position_id = parseInt(document.getElementById('candPositionSelect').value);
+                const year_level = document.getElementById('candYearInput').value;
+                const platform = document.getElementById('candPlatformTextarea').value.trim();
+
+                if (!candidate_name) {
+                    alert('Please provide a candidate name.');
+                    return;
+                }
+                if (!position_id) {
+                    alert('Please select a running position.');
+                    return;
+                }
+
+                const payload = {
+                    candidate_name,
+                    position_id,
+                    year_level,
+                    platform
+                };
+
+                if (uploadedBase64) {
+                    payload.profile_image_base64 = uploadedBase64;
+                } else if (uploadedBase64 === '') {
+                    payload.profile_image = 'default.svg';
+                }
+
+                const submitBtn = document.getElementById('candSubmitBtn');
+                submitBtn.disabled = true;
+
+                try {
+                    if (id) {
+                        payload.id = parseInt(id);
+                        await api.admin.editCandidate(payload);
+                    } else {
+                        await api.admin.addCandidate(payload);
+                    }
+                    closeCandFormModal();
+                    await render();
+                } catch (err) {
+                    alert('Error saving candidate: ' + (err.message || 'Server error.'));
+                } finally {
+                    submitBtn.disabled = false;
+                }
+            };
+
+            window.deleteCand = async (id, name) => {
+                if (confirm(`Are you sure you want to permanently remove candidate "${name}"?`)) {
+                    try {
+                        await api.admin.deleteCandidate(id);
+                        await render();
+                    } catch (err) {
+                        alert('Error deleting candidate: ' + (err.message || 'Server error.'));
+                    }
+                }
+            };
+
+            render();
+        })();
+    </script>
+</body>
+</html>

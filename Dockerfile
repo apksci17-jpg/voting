@@ -7,6 +7,10 @@ RUN docker-php-ext-install pdo pdo_mysql
 # Enable Apache rewrite and headers modules for CORS and .htaccess
 RUN a2enmod rewrite headers
 
+# Configure Apache to listen on port 8080 (Railway's default container port)
+RUN sed -i 's/80/8080/g' /etc/apache2/ports.conf /etc/apache2/sites-available/000-default.conf \
+    && echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
 # Set working directory
 WORKDIR /var/www/html
 
@@ -18,8 +22,8 @@ RUN mkdir -p /var/www/html/frontend/assets/uploads /var/www/html/backend/backups
     && chown -R www-data:www-data /var/www/html/frontend/assets/uploads /var/www/html/backend/backups \
     && chmod -R 775 /var/www/html/frontend/assets/uploads /var/www/html/backend/backups
 
-# Expose port (Railway injects $PORT at runtime)
-EXPOSE 80
+# Expose port 8080
+EXPOSE 8080
 
-# Dynamically bind Apache to Railway's $PORT environment variable and start server
-CMD sed -i "s/80/${PORT:-80}/g" /etc/apache2/ports.conf /etc/apache2/sites-available/000-default.conf && apache2-foreground
+# Start Apache directly using official foreground runner
+CMD ["apache2-foreground"]

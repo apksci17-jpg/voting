@@ -4,12 +4,21 @@
 // Globally configure Asia/Manila (Philippine Standard Time - UTC+8) for all voter and admin operations
 date_default_timezone_set('Asia/Manila');
 
-// Database Credentials (Auto-detects Railway, Docker, or local XAMPP environment)
-$dbHost = getenv('MYSQLHOST') ?: getenv('DB_HOST') ?: 'localhost';
-$dbUser = getenv('MYSQLUSER') ?: getenv('DB_USER') ?: 'root';
-$dbPass = getenv('MYSQLPASSWORD') !== false ? getenv('MYSQLPASSWORD') : (getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
-$dbName = getenv('MYSQLDATABASE') ?: getenv('DB_NAME') ?: 'voting';
-$dbPort = getenv('MYSQLPORT') ?: getenv('DB_PORT') ?: '3306';
+// Database Credentials (Auto-detects Railway MYSQL_URL, environment variables, or local XAMPP)
+if ($mysqlUrl = getenv('MYSQL_URL')) {
+    $parts = parse_url($mysqlUrl);
+    $dbHost = $parts['host'] ?? 'localhost';
+    $dbPort = $parts['port'] ?? 3306;
+    $dbUser = $parts['user'] ?? 'root';
+    $dbPass = $parts['pass'] ?? '';
+    $dbName = ltrim($parts['path'] ?? 'railway', '/');
+} else {
+    $dbHost = getenv('MYSQLHOST') ?: getenv('DB_HOST') ?: 'localhost';
+    $dbUser = getenv('MYSQLUSER') ?: getenv('DB_USER') ?: 'root';
+    $dbPass = (getenv('MYSQLPASSWORD') !== false && getenv('MYSQLPASSWORD') !== '') ? getenv('MYSQLPASSWORD') : (getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
+    $dbName = getenv('MYSQLDATABASE') ?: getenv('DB_NAME') ?: 'voting';
+    $dbPort = getenv('MYSQLPORT') ?: getenv('DB_PORT') ?: '3306';
+}
 
 define('DB_HOST', $dbHost);
 define('DB_USER', $dbUser);

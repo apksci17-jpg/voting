@@ -137,7 +137,8 @@ const api = {
         castVote: (votes, password = '') => api.post('voter.php?action=cast_vote', { votes, password }),
         verifyPassword: (password) => api.post('voter.php?action=verify_password', { password }),
         profile: () => api.get('voter.php?action=profile'),
-        updateProfile: (full_name) => api.post('voter.php?action=update_profile', { full_name })
+        updateProfile: (full_name) => api.post('voter.php?action=update_profile', { full_name }),
+        getReceiptDownloadUrl: () => `${API_BASE}/voter.php?action=download_receipt&token=${encodeURIComponent(api.getToken() || '')}`
     },
 
     biometrics: {

@@ -73,8 +73,40 @@
                     const hasVoted = res.has_voted;
                     const isOpen = res.voting_status === 'OPEN';
 
+                    const rawReceipt = sessionStorage.getItem('last_vote_receipt');
+                    let receiptNoticeHtml = '';
+                    if (rawReceipt) {
+                        try {
+                            const r = JSON.parse(rawReceipt);
+                            const email = r.email || user.email || 'your registered email';
+                            const studentId = r.student_id || user.student_id || user.username || '';
+                            receiptNoticeHtml = `
+                                <div style="background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%); border: 1.5px solid #86efac; border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; display: flex; align-items: flex-start; gap: 16px; box-shadow: 0 4px 15px rgba(22, 163, 74, 0.08);">
+                                    <div style="width: 44px; height: 44px; border-radius: 12px; background: #22c55e; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);">
+                                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 800; color: #14532d;">Official Ballot Successfully Cast!</h3>
+                                        <p style="margin: 0 0 12px 0; font-size: 13px; color: #166534; line-height: 1.5;">
+                                            A certified, password-protected copy of your ballot receipt has been sent to <strong>${email}</strong>.<br>
+                                            To open and view your PDF receipt, use your <strong>Student ID</strong> (<code>${studentId}</code>) as the unlock password.
+                                        </p>
+                                        <a href="${api.voter.getReceiptDownloadUrl()}" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background: #15803d; color: #ffffff; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; box-shadow: 0 2px 8px rgba(21, 128, 61, 0.25);">
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                            <span>Download Protected Receipt (.PDF)</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            `;
+                            sessionStorage.removeItem('last_vote_receipt');
+                        } catch (e) {
+                            console.error('Error parsing last_vote_receipt', e);
+                        }
+                    }
+
                     let html = `
                         <div class="animate-fade-in-up">
+                            ${receiptNoticeHtml}
                             <!-- Hero Welcome -->
                             <div class="voter-hero">
                                 <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.18); padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 12px;">
@@ -117,9 +149,15 @@
                                                 <span>Cast Your Vote Now</span>
                                             </a>
                                         ` : (hasVoted ? `
-                                            <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: #16a34a;">
-                                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                                Ballot Recorded Successfully
+                                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                                <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; color: #16a34a;">
+                                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                    Ballot Recorded Successfully
+                                                </div>
+                                                <a href="${api.voter.getReceiptDownloadUrl()}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #1e40af; text-decoration: none; background: #eff6ff; padding: 8px 12px; border-radius: 8px; border: 1px solid #bfdbfe; width: fit-content;">
+                                                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                                    <span>Download Protected Receipt (.PDF)</span>
+                                                </a>
                                             </div>
                                         ` : `
                                             <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #990000;">

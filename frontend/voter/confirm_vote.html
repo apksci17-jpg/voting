@@ -249,6 +249,14 @@
                     const res = await api.voter.castVote(votes, password);
                     if (res.success) {
                         sessionStorage.removeItem('ballot_selections');
+                        sessionStorage.setItem('last_vote_receipt', JSON.stringify({
+                            timestamp: res.timestamp,
+                            email_sent: res.email_sent,
+                            email: res.email,
+                            student_id: res.student_id,
+                            verification_hash: res.verification_hash,
+                            notice: res.notice
+                        }));
                         window.location.href = 'dashboard.html';
                     } else {
                         throw new Error(res.error || 'Submission failed');

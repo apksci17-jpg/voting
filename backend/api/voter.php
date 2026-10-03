@@ -4,6 +4,8 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/api_auth.php';
 require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/encryption.php';
+require_once __DIR__ . '/../includes/mailer.php';
+require_once __DIR__ . '/../includes/ballot_receipt.php';
 
 $action = $_GET['action'] ?? '';
 $pdo = getDBConnection();
@@ -121,11 +123,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'cast_vote') {
     }
     
     if ($success) {
-        echo json_encode(['success' => true, 'timestamp' => $voteTimestamp]);
+        $studentId = !empty($user['student_id']) ? trim($user['student_id']) : trim($user['username']);
+        $verificationHash = hash('sha256', $user['id'] . '|' . $studentId . '|' . $voteTimestamp . '|' . json_encode($finalVotes));
+        
+        $emailSent = false;
+        $emailError = null;
+
+        try {
+            $selectionsDetails = getBallotSelectionsDetails($pdo, $finalVotes);
+            // Generate password-protected official PDF copy (unlocked with voter's Student ID)
+            $pdfContent = generateProtectedBallotReceiptPdf($user, $selectionsDetails, $voteTimestamp, $verificationHash, $studentId);
+
+            if (!empty($user['email'])) {
+                $emailSent = sendVoterBallotReceipt($user['email'], $user['full_name'], $studentId, $voteTimestamp, $verificationHash, $pdfContent);
+            }
+        } catch (Throwable $mailEx) {
+            $emailError = $mailEx->getMessage();
+            error_log("Ballot receipt dispatch failed for voter ID {$user['id']}: " . $emailError);
+        }
+
+        echo json_encode([
+            'success' => true,
+            'timestamp' => $voteTimestamp,
+            'email_sent' => $emailSent,
+            'email' => $user['email'] ?? '',
+            'student_id' => $studentId,
+            'verification_hash' => $verificationHash,
+            'notice' => $emailSent 
+                ? "An official password-protected copy of your ballot has been emailed to {$user['email']} (unlocked using your Student ID)."
+                : "Your official ballot has been cryptographically recorded."
+        ]);
     } else {
         http_response_code(500);
         echo json_encode(['success' => false, 'error' => 'Submission Error']);
     }
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'download_receipt') {
+    $user = requireApiVoter();
+    if (!$user['has_voted']) {
+        http_response_code(400);
+        echo json_encode(['error' => 'You have not voted yet.']);
+        exit;
+    }
+
+    $stmt = $pdo->prepare("SELECT position_id, candidate_id, created_at FROM votes WHERE voter_id = ?");
+    $stmt->execute([$user['id']]);
+    $voteRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $finalVotes = [];
+    $voteTimestamp = date('Y-m-d H:i:s');
+    foreach ($voteRows as $vr) {
+        $finalVotes[$vr['position_id']] = $vr['candidate_id'];
+        $voteTimestamp = $vr['created_at'];
+    }
+
+    $studentId = !empty($user['student_id']) ? trim($user['student_id']) : trim($user['username']);
+    $verificationHash = hash('sha256', $user['id'] . '|' . $studentId . '|' . $voteTimestamp . '|' . json_encode($finalVotes));
+
+    $selectionsDetails = getBallotSelectionsDetails($pdo, $finalVotes);
+    $pdfContent = generateProtectedBallotReceiptPdf($user, $selectionsDetails, $voteTimestamp, $verificationHash, $studentId);
+
+    $cleanId = preg_replace('/[^a-zA-Z0-9_-]/', '_', $studentId);
+    $filename = "TomorrowVote_BallotReceipt_{$cleanId}.pdf";
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Length: ' . strlen($pdfContent));
+    header('Cache-Control: private, max-age=0, must-revalidate');
+    header('Pragma: public');
+    echo $pdfContent;
     exit;
 }
 

@@ -456,5 +456,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'reset_voter_ballot') {
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'sync_masterlist') {
+    requireApiAdmin();
+    try {
+        $pdo->exec("DELETE FROM election_settings WHERE setting_key = 'masterlist_voters_synced_v1'");
+    } catch (Exception $e) {}
+    autoSyncMasterlistVoters($pdo);
+    echo json_encode(['success' => true, 'message' => 'Masterlist voters synchronized successfully.']);
+    exit;
+}
+
 http_response_code(400);
 echo json_encode(['error' => 'Invalid action']);

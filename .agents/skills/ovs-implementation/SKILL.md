@@ -17,6 +17,7 @@ The system is architected as a **headless, decoupled system**:
 5. **Online Banking e-Statement (e-BS) Ballot Delivery**: Automatically generates a bank-statement-style certified electronic ballot receipt encrypted with RC4 dual-key protection (Student ID + Date of Birth YYYYMMDD), attached directly to the voter's confirmation email and available for on-demand in-app download.
 6. **Edge-to-Edge Android Immersive Display**: Clean viewport rendering under transparent system bars with zero letterboxing and disabled elastic overscroll bounce.
 7. **SVG Visual Standard**: Replaced all legacy emojis with sharp, scalable, accessible inline vector SVG icons across all views.
+8. **Authoritative Class Roster & Automated Database Synchronization**: Full integration of BSIT 31008 class masterlist (`backend/includes/voter_masterlist.php`) featuring 53 verified voters with genuine student emails, dual password credentials (hashed `FirstName + StudentNumber` or raw `StudentNumber`), and automatic one-time database migration on Railway cloud instances via `autoSyncMasterlistVoters($pdo)` and `entrypoint.sh`.
 
 ---
 
@@ -37,7 +38,7 @@ The system is architected as a **headless, decoupled system**:
 ## 2. API Specifications & Endpoints
 
 ### 2.1 Authentication (`backend/api/auth.php`)
-- `POST ?action=login`: Validates credentials (`username`/`student_id`/`email` + `password`).
+- `POST ?action=login`: Validates credentials (`username`/`student_id`/`email` + `password`). Supports dual password authentication for voters (matches either bcrypt hash of initial default password `FirstName + StudentNumber` or raw `StudentNumber` fallback).
   - For **Admins**: Immediately returns `{ success: true, token: "...", user: { id, role, full_name, username } }`.
   - For **Voters**: Generates 6-digit OTP, records in `users.login_otp` with 10-minute expiry, sends email, and returns `{ success: true, requires_otp: true, otp_user_id: ..., masked_email: "..." }`.
 - `POST ?action=verify_otp`: Validates 6-digit code against `users.login_otp` and expiration timestamp. Upon match, invalidates the code and returns `{ success: true, token: "...", user: { ... } }`.
@@ -48,8 +49,8 @@ The system is architected as a **headless, decoupled system**:
 ### 2.2 Voter Subsystem (`backend/api/voter.php`)
 - `GET ?action=dashboard`: Returns voter status, full name, election status (`OPEN`/`CLOSED`), and `has_voted` flag.
 - `GET ?action=candidates`: Returns all candidates grouped by positions in display order.
-- `POST ?action=verify_password`: Securely validates voter's password prior to casting ballot when biometrics are unavailable or bypassed.
-- `POST ?action=cast`: Commits voter choices. Optionally validates password. Encrypts payload with AES-256-CBC, inserts into `votes`, and sets `has_voted = 1` inside an atomic transaction. Triggers `generateProtectedBallotReceiptPdf()` and dispatches password-protected e-Statement email via PHPMailer.
+- `POST ?action=verify_password`: Securely validates voter's password prior to casting ballot when biometrics are unavailable or bypassed. Supports dual password authentication (bcrypt hash or raw student ID fallback).
+- `POST ?action=cast`: Commits voter choices. Optionally validates password (with dual-credential fallback). Encrypts payload with AES-256-CBC, inserts into `votes`, and sets `has_voted = 1` inside an atomic transaction. Triggers `generateProtectedBallotReceiptPdf()` and dispatches password-protected e-Statement email via PHPMailer.
 - `GET ?action=download_receipt`: Streams the voter's password-protected e-Statement PDF receipt (`eStatement_Ballot_[student_id].pdf`) directly to the client browser or Capacitor app.
 - `GET ?action=profile`: Returns student identity info (student ID, email, full name, birthdate).
 - `POST ?action=update_profile`: Updates voter's editable full name.
@@ -72,9 +73,10 @@ The system is architected as a **headless, decoupled system**:
 - `POST ?action=edit_voter`: Updates voter profile, section, and credentials with optional password reset.
 - `POST ?action=delete_voter`: Safely deletes voter and cascade-deletes votes in an atomic transaction.
 - `POST ?action=reset_voter_ballot`: Wipes a specific voter's ballot and resets `has_voted = 0` in an atomic transaction.
+- `POST ?action=sync_masterlist`: Synchronizes registered voter accounts against the authoritative 53-voter class roster in `backend/includes/voter_masterlist.php`. Idempotently updates verified Gmail addresses, inserts missing voters, and returns sync counts.
 
 ### 2.4 Cloud Health Diagnostic (`backend/api/health.php`)
-- `GET`: Returns JSON report of deployment health, PHP runtime version, environment variable flags (`has_MYSQL_URL`, `has_MYSQLHOST`, `has_PORT`), database connection status, and list of auto-provisioned tables. Does not require authentication.
+- `GET`: Returns JSON report of deployment health, PHP runtime version, environment variable flags (`has_MYSQL_URL`, `has_MYSQLHOST`, `has_PORT`), database connection status, list of auto-provisioned tables, `total_voters`, `voters_with_real_email`, and `masterlist_synced` status flag. Does not require authentication.
 
 ---
 
@@ -137,6 +139,7 @@ The frontend is specifically structured for direct compilation into native iOS a
 5. **Biometrics with Password Fallback**: Native mobile biometrics verify voter identity before ballot casting, with automatic fallback to password confirmation if biometrics are unavailable or fail.
 6. **Password-Protected e-Statements**: All ballot copies sent to voters via email or downloaded are encrypted with RC4 stream cipher using student credentials.
 7. **Certified PDF Archival**: Every reset triggers generation of a permanent PDF audit report with SHA-256 integrity signatures.
+8. **Masterlist Synchronization & Dual Password Credential**: Real student emails are locked to verified student numbers. Initial authentication supports both standard default password (`FirstName + StudentNumber`) and raw `StudentNumber` fallback to guarantee zero onboarding friction.
 
 ---
 
@@ -152,3 +155,16 @@ The frontend is specifically structured for direct compilation into native iOS a
   - Automatic database schema and account provisioning executes on virgin database instances via `backend/database/schema.sql`.
 - **API Error Normalization**:
   - Suppressed HTML error output in `backend/config/cors.php` via `ini_set('display_errors', '0')` and registered global JSON exception handler, ensuring all errors output valid JSON payloads rather than HTML strings.
+
+---
+
+## 8. Authoritative Class Masterlist & Cloud Synchronization
+
+- **Masterlist Roster (`backend/includes/voter_masterlist.php`)**:
+  - Defines the complete class roster of 53 students for section BSIT 31008.
+  - 36 students have verified student IDs and authentic personal Gmail addresses (e.g., `moiseskeralavarez@gmail.com`, `cassandramherranola@gmail.com`).
+  - 17 students with unlisted emails are assigned systematic unique IDs (`240199001`–`240199017`) and school domain placeholders, editable by administrators.
+- **Automated Railway Cloud Sync (`backend/config/database.php` & `entrypoint.sh`)**:
+  - When deployed to Railway (where an existing database already has the `users` table), `autoSyncMasterlistVoters($pdo)` checks the `election_settings.masterlist_voters_synced_v1` flag.
+  - If unapplied, it automatically iterates the 53 masterlist records: updating existing records to their verified Gmail addresses and inserting any missing voter rows.
+  - Executed automatically at container boot in `entrypoint.sh` via PHP CLI (`php -r "require 'backend/config/database.php'; autoSyncMasterlistVoters(getDbConnection());"`) and lazily during the first database connection.

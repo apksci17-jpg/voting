@@ -26,6 +26,78 @@ define('DB_PASS', $dbPass);
 define('DB_NAME', $dbName);
 define('DB_PORT', $dbPort);
 
+/**
+ * Auto-synchronize masterlist voters into the MySQL database.
+ * Updates emails of existing voters to their real Gmail addresses from Excel.
+ * Inserts any new voters from the masterlist.
+ * Runs automatically on Railway/cloud and local deployments.
+ */
+function autoSyncMasterlistVoters($pdo) {
+    static $alreadyRan = false;
+    if ($alreadyRan) return;
+
+    try {
+        // Ensure users table exists
+        $tblCheck = $pdo->query("SHOW TABLES LIKE 'users'");
+        if ($tblCheck->rowCount() === 0) return;
+
+        // Ensure election_settings table exists
+        $setCheck = $pdo->query("SHOW TABLES LIKE 'election_settings'");
+        if ($setCheck->rowCount() === 0) return;
+
+        // Check if masterlist was already synced to avoid redundant overhead
+        $stmtSetting = $pdo->prepare("SELECT setting_value FROM election_settings WHERE setting_key = 'masterlist_voters_synced_v1'");
+        $stmtSetting->execute();
+        $isSynced = $stmtSetting->fetchColumn();
+        if ($isSynced === '1') {
+            $alreadyRan = true;
+            return;
+        }
+
+        $masterlistFile = __DIR__ . '/../includes/voter_masterlist.php';
+        if (!file_exists($masterlistFile)) return;
+        $masterlist = require $masterlistFile;
+        if (!is_array($masterlist) || empty($masterlist)) return;
+
+        $findStmt = $pdo->prepare("SELECT id, username, student_id, email, full_name FROM users WHERE student_id = ? OR email = ? LIMIT 1");
+        $updateEmailStmt = $pdo->prepare("UPDATE users SET email = ?, full_name = ? WHERE id = ?");
+        $insertStmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role, full_name, student_id, has_voted, phone, date_of_birth, grade_level, section) VALUES (?, ?, ?, 'voter', ?, ?, 0, ?, ?, ?, ?)");
+
+        foreach ($masterlist as $voter) {
+            $studentId = trim($voter['student_id']);
+            $email = trim($voter['email']);
+            $fullName = trim($voter['full_name']);
+            $hash = $voter['password_hash'];
+            $phone = $voter['phone'] ?? '+63 912 345 6789';
+            $dob = $voter['date_of_birth'] ?? '2003-10-12';
+            $grade = $voter['grade_level'] ?? '3rd Year';
+            $section = $voter['section'] ?? 'BSIT 31008';
+
+            $findStmt->execute([$studentId, $email]);
+            $existing = $findStmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($existing) {
+                // If email or full name differs, update it immediately
+                if ($existing['email'] !== $email || $existing['full_name'] !== $fullName) {
+                    $updateEmailStmt->execute([$email, $fullName, $existing['id']]);
+                }
+            } else {
+                // Insert new voter
+                $username = $studentId;
+                $insertStmt->execute([$username, $email, $hash, $fullName, $studentId, $phone, $dob, $grade, $section]);
+            }
+        }
+
+        // Record setting flag so it only runs once per database lifecycle
+        $saveSetting = $pdo->prepare("INSERT INTO election_settings (setting_key, setting_value) VALUES ('masterlist_voters_synced_v1', '1') ON DUPLICATE KEY UPDATE setting_value = '1'");
+        $saveSetting->execute();
+
+        $alreadyRan = true;
+    } catch (Exception $e) {
+        error_log("autoSyncMasterlistVoters notice: " . $e->getMessage());
+    }
+}
+
 function getDBConnection() {
     static $pdo = null;
     if ($pdo !== null) {
@@ -57,6 +129,9 @@ function getDBConnection() {
                     $pdo->exec("ALTER TABLE users ADD COLUMN `login_otp` VARCHAR(10) DEFAULT NULL, ADD COLUMN `login_otp_expires_at` DATETIME DEFAULT NULL");
                 }
             }
+
+            // Auto-synchronize masterlist voters from Excel to database
+            autoSyncMasterlistVoters($pdo);
         } catch (Exception $initEx) {
             // Proceed even if auto-init is skipped or restricted
         }

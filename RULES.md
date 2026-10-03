@@ -90,6 +90,12 @@ After successful authentication:
   3. The entered password must be verified against `POST /backend/api/voter.php?action=verify_password` and validated atomically during `action=cast_vote`.
 - Web browser environments without native biometric plugins must seamlessly default to the password verification flow.
 
+### Rule 3.7 — Masterlist Voter Synchronization & Initial Credentials
+- The voter registry is grounded in the authoritative institutional class roster (`Masterlist BSIT31008-IS (1).xlsx` / `backend/includes/voter_masterlist.php`).
+- The database connection layer (`backend/config/database.php`) must automatically synchronize masterlist records on boot and connection, ensuring voters possess their verified email addresses for 2FA OTP delivery.
+- Voter authentication must accept either the generated default password (`FirstName + StudentNumber`) or raw `StudentNumber` to prevent voter sign-in friction during elections.
+- The administrative API must maintain a manual re-sync endpoint (`POST /backend/api/admin.php?action=sync_masterlist`).
+
 ---
 
 ## 4. Authorization Rules

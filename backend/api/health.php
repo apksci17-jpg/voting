@@ -39,6 +39,22 @@ try {
     $tablesStmt = $pdo->query("SHOW TABLES");
     $response['database']['tables'] = $tablesStmt->fetchAll(PDO::FETCH_COLUMN);
 
+    if (in_array('users', $response['database']['tables'])) {
+        $voterCountStmt = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'voter'");
+        $response['database']['total_voters'] = (int)$voterCountStmt->fetchColumn();
+        
+        $adminCountStmt = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'admin'");
+        $response['database']['total_admins'] = (int)$adminCountStmt->fetchColumn();
+
+        $realEmailCountStmt = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'voter' AND email LIKE '%@gmail.com'");
+        $response['database']['voters_with_real_email'] = (int)$realEmailCountStmt->fetchColumn();
+    }
+
+    if (in_array('election_settings', $response['database']['tables'])) {
+        $syncStmt = $pdo->query("SELECT setting_value FROM election_settings WHERE setting_key = 'masterlist_voters_synced_v1'");
+        $response['database']['masterlist_synced'] = ($syncStmt && $syncStmt->fetchColumn() === '1');
+    }
+
 } catch (Throwable $e) {
     $response['database'] = [
         'connection' => 'FAILED',

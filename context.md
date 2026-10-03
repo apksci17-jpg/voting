@@ -298,6 +298,7 @@ c:/xampp/htdocs/voting/
 │   │   ├── functions.php           # Election schedules, result tallies & MySQL 8 compliant queries
 │   │   ├── mailer.php              # Multi-channel mailer (SMTP 465/587, HTTPS Webhook, Brevo) with attachments
 │   │   ├── phpmailer/              # Bundled PHPMailer 7.1.1 library
+│   │   ├── voter_masterlist.php    # Clean parsed dataset of 53 voters from class masterlist
 │   │   └── pdf_export.php          # Certified election audit report generator
 │   └── backups/                    # Storage directory for certified PDF archives
 │
@@ -327,12 +328,13 @@ c:/xampp/htdocs/voting/
 │   ├── index.html                  # Frontend root redirector to login.html
 │   └── login.html                  # Official glassmorphism sign-in screen with 2FA OTP step
 │
+├── Masterlist BSIT31008-IS (1).xlsx # Authoritative class roster & voter emails
 ├── capacitor.config.json           # Capacitor configuration (webDir: "frontend")
 ├── package.json                    # Project metadata & Capacitor 8 dependencies
 ├── package-lock.json               # Deterministic dependency tree lock
 ├── index.php                       # Root redirector to frontend/login.html
 ├── Dockerfile                      # Production container recipe for Railway.app & cloud PaaS
-├── entrypoint.sh                   # Startup container initializer (MPM fix, port binding, permissions)
+├── entrypoint.sh                   # Startup container initializer (MPM fix, port binding, masterlist sync)
 ├── railway.json                    # Railway deployment & builder configuration as code
 ├── .dockerignore                   # Docker build exclusions (node_modules, android, ios)
 ├── .gitignore                      # Git exclusions (node_modules, .capacitor)
@@ -391,6 +393,26 @@ c:/xampp/htdocs/voting/
   - Added `GET /backend/api/voter.php?action=download_receipt` endpoint enabling direct PDF download from the voter dashboard or app.
   - Post-voting dashboard banner provides immediate visual confirmation and one-click statement download.
 
+### K. Excel Masterlist Ingestion & Automated Railway Database Synchronization
+- **Masterlist Data Extraction (`Masterlist BSIT31008-IS (1).xlsx`)**:
+  - Ingested the entire 53-student class roster for section BSIT 31008.
+  - Extracted 36 verified student emails (Gmail) and authoritative Student Numbers (e.g. `240104785` Alvarez, `240114837` Rañola, `240114524` Antonio, `240108957` Albos, etc.).
+  - Generated `backend/includes/voter_masterlist.php` containing structured PHP records for all 53 voters.
+- **Automated Railway Cloud Database Sync (`backend/config/database.php`)**:
+  - Implemented `autoSyncMasterlistVoters($pdo)` running automatically upon PDO connection on both local and Railway environments.
+  - **Existing Account Email Patching**: Automatically detects existing voter accounts (previously having dummy `@student.bcp.edu.ph` addresses) and updates their `email` to their real Gmail addresses from the Excel sheet.
+  - **New Voter Auto-Provisioning**: Inserts all missing students into `users` with hashed passwords, Student IDs, and default role `'voter'`.
+  - **Execution Guard**: Uses `election_settings.masterlist_voters_synced_v1` flag ensuring synchronization executes exactly once per database lifecycle with zero recurring query overhead.
+- **Container Pre-Boot Hook (`entrypoint.sh`)**:
+  - Injected pre-startup CLI sync (`php -r "require_once '/var/www/html/backend/config/database.php'; getDBConnection();"`) into `entrypoint.sh` executing right before Apache starts.
+- **Dual Password Authentication Fallback**:
+  - Upgraded password verification in `auth.php` and `voter.php` (`action=verify_password` and `action=cast_vote`): accepts both the hashed initial password (`FirstName + StudentNumber`) and the raw `StudentNumber` as valid initial credentials, preventing student login friction.
+- **Database Seed Modernization (`schema.sql` & `voting_db_import.sql`)**:
+  - Updated default database dumps to seed all 53 voters with their real emails and Student IDs.
+- **Diagnostic Metrics (`backend/api/health.php` & `backend/api/admin.php`)**:
+  - Added `total_voters`, `total_admins`, `voters_with_real_email`, and `masterlist_synced` status indicators to `health.php`.
+  - Added `action=sync_masterlist` administrative endpoint in `admin.php` for manual re-triggering.
+
 ---
 
 ## 4. Key Operating Principles & Constraints
@@ -400,6 +422,7 @@ c:/xampp/htdocs/voting/
 4. **SVG Icon Standard**: No raw emojis as navigation or action icons; strictly utilize inline vector SVGs.
 5. **One Student, One Vote**: Enforced atomically via MySQL transactions and `has_voted` flags.
 6. **E-Statement Security & Confidentiality**: Ballot receipts sent via email must always be password-protected with the student's unique credentials. Voting commitments must never be aborted if an external mail service experiences latency or network timeouts.
+7. **Masterlist Synchronization**: The system automatically aligns the voter database with the authoritative class masterlist on startup and cloud deployment, ensuring all voters have their verified email addresses for 2FA OTP delivery.
 
 
 

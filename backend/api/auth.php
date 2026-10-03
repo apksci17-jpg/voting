@@ -41,7 +41,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'login') {
     $stmt->execute([$username, $username, $username]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($user && password_verify($password, $user['password_hash'])) {
+    $isPasswordValid = false;
+    if ($user) {
+        if (password_verify($password, $user['password_hash'])) {
+            $isPasswordValid = true;
+        } elseif (!empty($user['student_id']) && $password === $user['student_id']) {
+            $isPasswordValid = true;
+        }
+    }
+
+    if ($user && $isPasswordValid) {
         // ADMIN: Direct password authentication
         if ($user['role'] === 'admin') {
             $token = bin2hex(random_bytes(32));

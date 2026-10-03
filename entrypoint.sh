@@ -27,5 +27,9 @@ chmod -R 775 /var/www/html/frontend/assets/uploads /var/www/html/backend/backups
 echo "Active MPMs in Apache:"
 ls -la /etc/apache2/mods-enabled/mpm* 2>/dev/null || true
 
+# 4. Auto-sync masterlist voters into Railway database on startup
+echo "[4/4] Auto-syncing masterlist voters into database..."
+php -r "require_once '/var/www/html/backend/config/database.php'; getDBConnection();" 2>/dev/null || true
+
 echo "=== Starting Apache in foreground on port ${APP_PORT} ==="
 exec apache2-foreground

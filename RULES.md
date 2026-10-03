@@ -13,7 +13,7 @@ Priority order:
 
 When sources conflict, do not silently rewrite the system. Explain the conflict and make the smallest safe change required by the user's request.
 
-The system documentation defines the Online Voting System as a decoupled, headless web and mobile-ready platform that authenticates users via tokens, routes them by role, manages candidates and voters, controls voting periods, guides ballot casting, cryptographically encrypts/stores votes, and provides real-time results analytics.
+The system documentation defines the Online Voting System as a decoupled, headless web and mobile-ready platform that authenticates users via tokens and 2FA email OTP, routes them by role, manages candidates and voters, controls voting periods, verifies voter identity via native biometrics or password fallback, guides ballot casting, cryptographically encrypts/stores votes, generates password-protected e-Statement receipts, and provides real-time results analytics.
 
 ---
 
@@ -44,7 +44,7 @@ Never silently introduce undocumented business rules such as:
 - result-publication rules,
 - voter anonymity guarantees,
 - blockchain voting,
-- AI fraud detection.
+- AI camera facial recognition.
 
 If the existing code already implements a rule, preserve it unless the user explicitly asks for a change.
 
@@ -59,13 +59,20 @@ If the existing code already implements a rule, preserve it unless the user expl
 - The frontend must communicate with the backend exclusively via HTTP JSON requests using `fetch` or the unified `frontend/js/api.js` client wrapper.
 - PHP files must NEVER render HTML views directly. All templating occurs on the client.
 
-### Rule 3.2 — Stateless Bearer Token Authentication
+### Rule 3.2 — Stateless Bearer Token & 2FA Email OTP Authentication
 - Authentication is governed by random 64-character Bearer tokens generated upon login and persisted in `users.session_token`.
+- For **Voter accounts**, 2FA Email OTP verification is mandatory on every login:
+  - The server generates a 6-digit numeric OTP (`random_int(100000, 999999)`), records it in `users.login_otp`, and sets a 10-minute expiration timestamp in `users.login_otp_expires_at`.
+  - The OTP is dispatched to the voter's registered email via PHPMailer with multi-port SMTP failover (465 SSL, 587 TLS) and HTTPS relay options (Google Apps Script Webhook, Brevo API).
+  - The Bearer session token is issued ONLY after successful verification via `POST /backend/api/auth.php?action=verify_otp`.
+  - A resend endpoint (`action=resend_otp`) with a 30-second rate-limiting cooldown must be maintained.
+- For **Admin accounts**, credential validation immediately returns the 64-character Bearer token.
 - Clients store this token in `localStorage` (`voter_token`) and attach it via the `Authorization: Bearer <token>` HTTP header.
 - Do not rely on PHP cookie sessions (`$_SESSION`) for authentication, ensuring seamless compatibility across Capacitor mobile webviews and cross-origin environments.
 
 ### Rule 3.3 — CORS Policy
 - `backend/config/cors.php` must maintain permissive CORS headers (`Access-Control-Allow-Origin: *`, `Authorization` header support, preflight `OPTIONS` handling) to allow native mobile wrappers (`capacitor://`, `http://localhost`) to execute API requests without origin blocking.
+- `Content-Disposition` and `Content-Length` headers must be exposed to allow binary PDF streaming.
 
 ### Rule 3.4 — Validate Credentials Securely
 - Validate supplied `student_id`, `username`, or `email` against the `users` table.
@@ -75,6 +82,13 @@ If the existing code already implements a rule, preserve it unless the user expl
 After successful authentication:
 - Administrator → `frontend/admin/dashboard.html`
 - User/Voter → `frontend/voter/dashboard.html`
+
+### Rule 3.6 — Pre-Vote Native Biometrics with In-App Password Fallback
+- Before committing and sealing a ballot on `confirm_vote.html`, the system must authenticate the voter:
+  1. On native mobile hardware (Android/iOS via Capacitor), initiate biometric prompt (Fingerprint / Face ID) using `@capgo/capacitor-native-biometric`.
+  2. If biometric hardware is unavailable, not enrolled, cancelled by the voter, or fails, the application must automatically display an elevated in-app Password Verification Modal.
+  3. The entered password must be verified against `POST /backend/api/voter.php?action=verify_password` and validated atomically during `action=cast_vote`.
+- Web browser environments without native biometric plugins must seamlessly default to the password verification flow.
 
 ---
 
@@ -97,8 +111,9 @@ The voter workflow is protected by `requireApiVoter()`:
 - Receiving the digital ballot
 - Selecting candidates (1 candidate per position)
 - Reviewing selections on the confirmation screen
-- Revising choices before final casting
+- Completing biometric or password identity verification
 - Submitting the final vote with AES-256-CBC ballot encryption
+- Downloading password-protected electronic ballot statement receipts (`action=download_receipt`)
 
 ### Rule 4.3 — Never Trust Client-Side Role Data
 Never authorize actions based on `localStorage` role flags, hidden form inputs, or disabled buttons. Every API endpoint must validate the Bearer token and check the database role.
@@ -110,7 +125,7 @@ Never authorize actions based on `localStorage` role flags, hidden form inputs, 
 
 ---
 
-## 5. Election-State & Ballot Integrity Rules
+## 5. Election-State, Ballot Integrity & e-Statement Rules
 
 ### Rule 5.1 — Voting Period Controls Are Authoritative
 - Administrators control voting status (`OPEN` or `CLOSED`).
@@ -125,9 +140,20 @@ Never authorize actions based on `localStorage` role flags, hidden form inputs, 
 - Ballots must be encrypted using AES-256-CBC with secure encryption keys before insertion into the `votes` table.
 - Raw voter choices must never be stored in plaintext.
 
-### Rule 5.4 — Biometrics Removed
-- AI facial recognition, camera enrollment, and liveness checks have been completely removed from the system.
-- The voter workflow is direct, fast, and accessible across all standard mobile and desktop browsers without camera permission blockers.
+### Rule 5.4 — Modern Hardware Biometrics & Zero Camera AI
+- External camera-based facial recognition, AI face matching, and video liveness checks are strictly prohibited.
+- Biometric authentication must strictly utilize device-native hardware APIs (Android BiometricPrompt / iOS LocalAuthentication via `@capgo/capacitor-native-biometric`).
+- If biometric hardware is not available, not enrolled, or bypassed, the system must provide a seamless, secure in-app password verification fallback.
+
+### Rule 5.5 — Password-Protected e-Statement (e-BS) Delivery
+- Immediately upon successful vote commitment, the system must generate a bank-statement-style electronic ballot receipt PDF via `generateProtectedBallotReceiptPdf()`.
+- The PDF document must be encrypted using 128-bit/40-bit RC4 stream encryption (`FPDF_Protection`).
+- The encryption password must be set to the student's unique credentials:
+  - **Primary unlock password**: Voter's Student ID (`users.student_id`).
+  - **Alternate unlock password**: Voter's Date of Birth in `YYYYMMDD` format (`users.date_of_birth`).
+- The protected PDF must be attached directly to an official electronic statement confirmation email dispatched via PHPMailer.
+- Email dispatch failures (e.g. cloud host port blocks) must NEVER abort or roll back the committed vote transaction.
+- Voters must be able to download their password-protected receipt on demand via `action=download_receipt` at any time from their voter portal.
 
 ---
 
@@ -171,6 +197,11 @@ Never authorize actions based on `localStorage` role flags, hidden form inputs, 
 - The top navigation bar (`.top-header`) must apply `padding-top: calc(14px + env(safe-area-inset-top, 0px))` so sticky headers cleanly clear the native status bar and camera notch.
 - The fixed bottom navigation bar (`.mobile-bottom-nav`) must apply `padding-bottom: env(safe-area-inset-bottom, 0px)` so tab items remain clear of the device home gesture indicator.
 - The main scrollable view container (`.content-body`) on mobile screens (<900px) must enforce a minimum `padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;` to ensure all submit buttons, form controls, and cards have at least 50px of visible whitespace above the floating bottom navigation bar when scrolled to the end of the page.
+
+### Rule 6.8 — Edge-to-Edge Native Display & Elastic Scroll Elimination
+- The mobile application must draw seamlessly edge-to-edge under transparent system bars without visual letterboxing or colored border seams.
+- Native Android `MainActivity.java` and `styles.xml` configure transparent system bars with dark icons matching the slate background.
+- Rubber-band elastic overscroll bouncing must be strictly disabled across all webviews and scrollable viewports using `overscroll-behavior: none !important;` and `View.OVER_SCROLL_NEVER`.
 
 ---
 
@@ -222,10 +253,10 @@ Never authorize actions based on `localStorage` role flags, hidden form inputs, 
 A task is complete only when:
 1. The requested feature or fix operates correctly.
 2. The headless separation is maintained (no server-side HTML rendering).
-3. Stateless Bearer token authentication remains enforced.
+3. Stateless Bearer token authentication and 2FA email OTP flows remain enforced.
 4. Election-state rules and transaction boundaries remain intact.
 5. All icons use clean inline SVG vectors without emojis.
-6. Mobile responsiveness and Capacitor readiness are preserved.
+6. Mobile responsiveness, edge-to-edge layout, and Capacitor readiness are preserved.
 7. Cloud containerization, dynamic port binding, and MySQL 8 compatibility are preserved.
-8. Documentation (.md files) is updated to reflect all architectural changes.
-
+8. Password-protected ballot e-Statement generation and email dispatch operate smoothly without blocking core voting flow.
+9. Documentation (.md files) is updated to reflect all architectural changes.

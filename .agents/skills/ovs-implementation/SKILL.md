@@ -10,10 +10,13 @@ description: Defines how an Antigravity coding agent should understand, implemen
 This skill defines how an Antigravity coding agent should understand, implement, modify, test, and document the Online Voting System (OVS).
 
 The system is architected as a **headless, decoupled system**:
-1. **Stateless PHP Backend API** (`backend/`): Provides secure JSON REST endpoints, Bearer token authentication, CORS configuration, and AES-256-CBC ballot encryption.
+1. **Stateless PHP Backend API** (`backend/`): Provides secure JSON REST endpoints, Bearer token authentication, 2FA Email OTP, CORS configuration, AES-256-CBC ballot encryption, and password-protected PDF e-Statement receipts.
 2. **Decoupled Client Frontend** (`frontend/`): Pure HTML5, CSS3, and modern Vanilla JavaScript, optimized for both desktop web browsers and native mobile app packaging via **Capacitor** (iOS & Android).
-3. **Clean Cryptography & Direct Ballot Flow**: Fast, accessible voting flow without external AI biometric dependencies.
-4. **SVG Visual Standard**: Replaced all emojis with sharp, scalable, accessible inline vector SVG icons across all views.
+3. **2FA Email OTP Sign-in**: Mandatory 6-digit numeric verification code dispatched to registered voter email on login, backed by multi-port SMTP failover and HTTPS Webhook relays.
+4. **Hardware Native Biometrics with In-App Password Fallback**: Pre-vote identity verification via `@capgo/capacitor-native-biometric` (fingerprint/face) on mobile devices, with seamless fallback to secure password confirmation.
+5. **Online Banking e-Statement (e-BS) Ballot Delivery**: Automatically generates a bank-statement-style certified electronic ballot receipt encrypted with RC4 dual-key protection (Student ID + Date of Birth YYYYMMDD), attached directly to the voter's confirmation email and available for on-demand in-app download.
+6. **Edge-to-Edge Android Immersive Display**: Clean viewport rendering under transparent system bars with zero letterboxing and disabled elastic overscroll bounce.
+7. **SVG Visual Standard**: Replaced all legacy emojis with sharp, scalable, accessible inline vector SVG icons across all views.
 
 ---
 
@@ -23,10 +26,10 @@ The system is architected as a **headless, decoupled system**:
 - **Architecture Model:** Decoupled Headless Client-Server (REST API + Static SPA/MPA)
 - **Target Platforms:** Web (Desktop & Mobile browsers) + Native Mobile App (via Capacitor)
 - **Primary Roles:** Administrator (`admin`) and Voter/User (`voter`)
-- **Authentication:** Stateless Bearer Token (`Authorization: Bearer <token>`) persisted in `localStorage`
+- **Authentication:** Stateless Bearer Token (`Authorization: Bearer <token>`) persisted in `localStorage` + 2FA Email OTP for voters
 - **Frontend Core:** Pure HTML5, CSS3, Vanilla JS (`frontend/js/api.js`, `frontend/js/components.js`)
-- **Backend Core:** PHP 8+ with MySQL PDO, CORS headers, AES-256-CBC ballot encryption, and FPDF report generator
-- **Vote Lifecycle:** Candidate review → Digital ballot → Selections stored in `sessionStorage` → Confirmation screen → Encrypted atomic submission → Dashboard confirmation badge
+- **Backend Core:** PHP 8+ with MySQL PDO, CORS headers, AES-256-CBC ballot encryption, FPDF 1.86, and RC4 PDF protection
+- **Vote Lifecycle:** Candidate review → Digital ballot → Selections stored in `sessionStorage` → Confirmation screen → Biometric / Password identity verification → Encrypted atomic submission → Password-protected e-Statement email attachment & on-demand download → Dashboard confirmation badge
 - **Administrative Lifecycle:** Candidate management → Polling control (`OPEN`/`CLOSED`) → Live results aggregation → Certified PDF audit backups
 
 ---
@@ -34,15 +37,21 @@ The system is architected as a **headless, decoupled system**:
 ## 2. API Specifications & Endpoints
 
 ### 2.1 Authentication (`backend/api/auth.php`)
-- `POST ?action=login`: Validates credentials (`username`/`student_id`/`email` + `password`). Returns `{ success: true, token: "...", user: { id, role, full_name, student_id } }`.
+- `POST ?action=login`: Validates credentials (`username`/`student_id`/`email` + `password`).
+  - For **Admins**: Immediately returns `{ success: true, token: "...", user: { id, role, full_name, username } }`.
+  - For **Voters**: Generates 6-digit OTP, records in `users.login_otp` with 10-minute expiry, sends email, and returns `{ success: true, requires_otp: true, otp_user_id: ..., masked_email: "..." }`.
+- `POST ?action=verify_otp`: Validates 6-digit code against `users.login_otp` and expiration timestamp. Upon match, invalidates the code and returns `{ success: true, token: "...", user: { ... } }`.
+- `POST ?action=resend_otp`: Re-generates and re-dispatches OTP email with 30-second rate-limiting cooldown.
 - `GET ?action=me`: Validates Bearer token header. Returns authenticated user payload.
 - `POST ?action=logout`: Clears the user's `session_token` in the database.
 
 ### 2.2 Voter Subsystem (`backend/api/voter.php`)
 - `GET ?action=dashboard`: Returns voter status, full name, election status (`OPEN`/`CLOSED`), and `has_voted` flag.
 - `GET ?action=candidates`: Returns all candidates grouped by positions in display order.
-- `POST ?action=cast`: Commits voter choices. Encrypts payload with AES-256-CBC, inserts into `votes`, and sets `has_voted = 1` inside an atomic transaction.
-- `GET ?action=profile`: Returns student identity info (student ID, email, full name).
+- `POST ?action=verify_password`: Securely validates voter's password prior to casting ballot when biometrics are unavailable or bypassed.
+- `POST ?action=cast`: Commits voter choices. Optionally validates password. Encrypts payload with AES-256-CBC, inserts into `votes`, and sets `has_voted = 1` inside an atomic transaction. Triggers `generateProtectedBallotReceiptPdf()` and dispatches password-protected e-Statement email via PHPMailer.
+- `GET ?action=download_receipt`: Streams the voter's password-protected e-Statement PDF receipt (`eStatement_Ballot_[student_id].pdf`) directly to the client browser or Capacitor app.
+- `GET ?action=profile`: Returns student identity info (student ID, email, full name, birthdate).
 - `POST ?action=update_profile`: Updates voter's editable full name.
 
 ### 2.3 Administrator Subsystem (`backend/api/admin.php`)
@@ -77,12 +86,10 @@ The system is architected as a **headless, decoupled system**:
 - **Native Mobile Bottom Navigation Bar**: Fixed bottom tab bar (`.mobile-bottom-nav`) on screens <900px featuring glassmorphism blur and 5 quick-switch tabs for admins (Overview, Control, Candidates, Voters, Results) and 4 for voters (Dashboard, Candidates, Ballot, Profile) with active indicators and safe-area insets.
 - **Native Touch Dynamics & Haptic Damping**: All touch surfaces feature `touch-action: manipulation` (no 300ms delay), `-webkit-tap-highlight-color: transparent`, `user-select: none`, and instant tap damping (`scale(0.97)` on `:active`) with cubic-bezier hover elevation (`translateY(-4px) scale(1.008)`).
 - **Fullscreen Smooth Circular Loading Animation**: Centered, hardware-accelerated 60/120fps SVG circular indeterminate progress spinner (`#app-fullscreen-loader`, `.circular-spinner`) with smooth keyframe dash and rotation transitions on a clean, light neutral backdrop (`rgba(255, 255, 255, 0.94)`). Pre-initialized on DOM ready and automatically wired into `api.request()` network cycles.
-- **High-Performance Neutral Backgrounds**: Replaced `--bg-light: #e7effa;` with instantaneous-loading neutral slate/white surfaces (`#f8fafc`) across all inner app portals for immediate First Contentful Paint.
+- **High-Performance Neutral Backgrounds**: Clean, instantaneous-loading neutral slate/white surfaces (`#f8fafc`) across all inner app portals for immediate First Contentful Paint.
 - **Strict Emoji Prohibition**: All legacy emoji icons have been replaced with inline vector SVG icons using standard 24x24 or 18x18 viewBoxes and theme tokens.
-- **Login Ballot Background & Frosted Glassmorphic Sign-In**: Login screen features the official ballot background image (`login_bg.png`) layered under a subtle depth gradient with an elevated frosted glassmorphism card (`backdrop-filter: blur(18px)`), floating official emblem, and high-contrast typography.
-- **Password Visibility Control**: Modern show/hide toggle utilizing clean SVG eye and eye-off vectors.
-- **Off-Canvas Navigation Drawer**: Responsive slide-out navigation sidebar with tap-to-dismiss backdrop for screens <900px.
-- **High-Contrast Data Display**: Accessible typography, high contrast metric cards, position badges, and dynamic progress bars.
+- **Login Ballot Background & Frosted Glassmorphic Sign-In**: Login screen features the official ballot background image (`login_bg.png`) layered under a subtle depth gradient with an elevated frosted glassmorphism card (`backdrop-filter: blur(18px)`), 2FA OTP verification modal, and high-contrast typography.
+- **Edge-to-Edge Viewport**: Zero letterboxing with transparent system bars, dark system icons, and `overscroll-behavior: none` eliminating elastic bounce.
 
 ---
 
@@ -97,19 +104,43 @@ The frontend is specifically structured for direct compilation into native iOS a
 - Viewport-fit cover (`<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">`) exposing hardware notch, camera punch-hole, and home gesture safe-area metrics.
 - Top safe-area padding on `.top-header` (`padding-top: calc(14px + env(safe-area-inset-top, 0px))`).
 - Bottom clearance on `.content-body` (`padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;`) ensuring content, forms, and submit buttons are completely visible and unblocked above the bottom navigation bar.
+- Pre-vote native biometrics using `@capgo/capacitor-native-biometric` (v8.7.0) with biometric availability detection and emerald status shield.
 
 ---
 
-## 5. Security & Verification Rules
+## 5. Online Banking e-Statement (e-BS) PDF Generator & Encryption
+
+- **Generator Utility (`backend/includes/ballot_receipt.php`)**:
+  - `generateProtectedBallotReceiptPdf($pdo, $voterId, $userPassword)`:
+    - Builds an authentic bank-statement layout: institutional letterhead, statement reference (`REF: BS-2026-[student_id]-[hash]`), student account details card, itemized ballot transaction ledger (`TXN-01`, etc.), candidate names, `COUNTED` verification stamps, ledger reconciliation summary, and bank-grade SHA-256 cryptographic audit box.
+- **Dual-Key Document Password Protection (`backend/includes/fpdf_protection.php`)**:
+  - Extends `FPDF` with standard 128-bit/40-bit RC4 stream encryption.
+  - Implements dual unlock keys:
+    - **Primary password**: Voter's Student ID (`users.student_id`).
+    - **Alternate password**: Voter's Date of Birth in `YYYYMMDD` format (`users.date_of_birth`).
+- **Delivery Mailer (`backend/includes/mailer.php`)**:
+  - `sendVoterBallotReceipt($voterEmail, $voterName, $studentId, $pdfContent, $birthdate)`:
+    - Attaches encrypted PDF with MIME type `application/pdf` and filename `eStatement_Ballot_[student_id].pdf`.
+    - Dispatches rich HTML email with attachment card, large monospace password reminder badge, 3-step opening instructions, and banking-grade security advisory.
+  - Execution is non-blocking: mail network latency or timeout never aborts the committed vote transaction.
+- **On-Demand In-App Download (`backend/api/voter.php`)**:
+  - Endpoint `GET ?action=download_receipt` streams the password-protected receipt binary directly with `Content-Type: application/pdf` and `Content-Disposition: attachment; filename="eStatement_Ballot_[student_id].pdf"`.
+
+---
+
+## 6. Security & Verification Rules
 
 1. **Server-Side Validation**: Client-side state is never trusted. Every administrative endpoint checks `requireApiAdmin()` and every voter endpoint checks `requireApiVoter()`.
-2. **Atomic Vote Commit**: Double-voting is strictly prevented via MySQL transactions and `has_voted` account verification.
-3. **AES-256-CBC Encryption**: Ballots are stored encrypted with initialization vectors; plaintext votes are never written to disk or logs.
-4. **Certified PDF Archival**: Every reset triggers generation of a permanent PDF audit report with SHA-256 integrity signatures.
+2. **2FA Email OTP Verification**: Voter accounts must verify a 6-digit numeric OTP before Bearer session tokens are issued.
+3. **Atomic Vote Commit**: Double-voting is strictly prevented via MySQL transactions and `has_voted` account verification.
+4. **AES-256-CBC Encryption**: Ballots are stored encrypted with initialization vectors; plaintext votes are never written to disk or logs.
+5. **Biometrics with Password Fallback**: Native mobile biometrics verify voter identity before ballot casting, with automatic fallback to password confirmation if biometrics are unavailable or fail.
+6. **Password-Protected e-Statements**: All ballot copies sent to voters via email or downloaded are encrypted with RC4 stream cipher using student credentials.
+7. **Certified PDF Archival**: Every reset triggers generation of a permanent PDF audit report with SHA-256 integrity signatures.
 
 ---
 
-## 6. Cloud Deployment & Containerization Architecture (Railway.app)
+## 7. Cloud Deployment & Containerization Architecture (Railway.app)
 
 - **Containerization Blueprint (`Dockerfile`, `entrypoint.sh`, `railway.json`)**:
   - Base Image: `php:8.2-apache` with `pdo_mysql`.
@@ -121,4 +152,3 @@ The frontend is specifically structured for direct compilation into native iOS a
   - Automatic database schema and account provisioning executes on virgin database instances via `backend/database/schema.sql`.
 - **API Error Normalization**:
   - Suppressed HTML error output in `backend/config/cors.php` via `ini_set('display_errors', '0')` and registered global JSON exception handler, ensuring all errors output valid JSON payloads rather than HTML strings.
-

@@ -244,6 +244,30 @@ This document maintains a comprehensive record of all changes, features, archite
 
 ---
 
+### O. Elastic Scroll Elimination & Dark System Bars Implementation
+- **Stakeholder Directive**: Remove the elastic bounce effect on mobile and make the status bar and navigation bar dark so they are clearly visible framing the white background of the app.
+- **Eradication of Mobile Elastic Overscroll**:
+  - **CSS Layer (`frontend/assets/css/style.css`)**:
+    - Replaced `overscroll-behavior-y: contain` with `overscroll-behavior: none !important; overscroll-behavior-y: none !important; overscroll-behavior-x: none !important;` on `html, body`.
+    - Set `-webkit-overflow-scrolling: auto !important;` across all scrollable containers (`.main-wrapper`, `.content-body`, `.sidebar`, `.candidate-modal-sheet`, `.app-container`) completely disabling WebKit/iOS and Chromium rubber-band bouncing.
+  - **Native Android WebView Layer (`MainActivity.java`)**:
+    - Injected `getBridge().getWebView().setOverScrollMode(View.OVER_SCROLL_NEVER);` inside `onStart()`, disabling the Android 12+ (API 31+) system-wide stretch/elastic bounce animation on the WebView.
+- **Dark Status Bar & Dark Navigation Bar Configuration**:
+  - **Android Native Theme (`styles.xml`)**:
+    - Configured `android:statusBarColor` to `#0f172a` (Tomorrow Vote deep navy slate).
+    - Configured `android:navigationBarColor` to `#0f172a`.
+    - Set `android:windowLightStatusBar` and `android:windowLightNavigationBar` to `false` ensuring system icons (clock, battery, Wi-Fi, back, home, recents) render in high-contrast white.
+  - **Android Runtime Window Controller (`MainActivity.java`)**:
+    - Enforced `FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS` with `setStatusBarColor("#0f172a")` and `setNavigationBarColor("#0f172a")`.
+    - Used `WindowInsetsControllerCompat` to enforce `setAppearanceLightStatusBars(false)` and `setAppearanceLightNavigationBars(false)`.
+  - **Capacitor Configuration & Plugin (`capacitor.config.json` & `@capacitor/status-bar@8.0.4`)**:
+    - Installed official `@capacitor/status-bar@8.0.4`.
+    - Configured `plugins.StatusBar` with `overlaysWebView: false`, `style: "DARK"`, and `backgroundColor: "#0f172a"`.
+  - **Web Document Standards**:
+    - Injected `<meta name="theme-color" content="#0f172a">` and `<meta name="apple-mobile-web-app-status-bar-style" content="black">` across all 11 HTML view documents in `frontend/`.
+
+---
+
 ## 3. Current Directory & File Inventory
 
 ```

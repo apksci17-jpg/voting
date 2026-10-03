@@ -33,12 +33,14 @@
     -moz-osx-font-smoothing: grayscale;
 }
 
-body {
+html, body {
     background-color: #f8fafc;
     color: var(--text-main);
     display: flex;
     min-height: 100vh;
     overflow-x: hidden;
+    overscroll-behavior: none !important;
+    overscroll-behavior-y: none !important;
 }
 
 /* ==========================================================================
@@ -2323,12 +2325,21 @@ body.sidebar-drawer-active {
    NATIVE MOBILE APP BEHAVIOR, TOUCH TUNING & CLICKABLE CANDIDATE MODALS
    ========================================================================== */
 
-/* 1. Global Touch Optimization & Mobile Polish */
+/* 1. Global Touch Optimization & Mobile Polish (Elastic Bounce Eradicated) */
 html, body {
     -webkit-tap-highlight-color: transparent !important;
     touch-action: manipulation;
-    overscroll-behavior-y: contain;
-    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none !important;
+    overscroll-behavior-y: none !important;
+    overscroll-behavior-x: none !important;
+    -webkit-overflow-scrolling: auto !important;
+}
+
+/* Eliminate elastic rubber-band bouncing on all scrollable application containers */
+.main-wrapper, .content-body, .sidebar, .candidate-modal-sheet, .app-container {
+    overscroll-behavior: none !important;
+    overscroll-behavior-y: none !important;
+    -webkit-overflow-scrolling: auto !important;
 }
 
 /* Prevent accidental text highlighting during touch drags on controls */

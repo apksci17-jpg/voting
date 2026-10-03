@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'login') {
                 http_response_code(500);
                 echo json_encode([
                     'success' => false,
-                    'error' => 'Unable to dispatch verification email. Please check internet connection or contact administration.'
+                    'error' => 'Unable to dispatch verification email (' . $mailEx->getMessage() . '). Please check internet connection or contact administration.'
                 ]);
                 exit;
             }
@@ -202,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'resend_otp') {
         http_response_code(500);
         echo json_encode([
             'success' => false,
-            'error' => 'Unable to dispatch verification email. Please check internet connection or contact administration.'
+            'error' => 'Unable to dispatch verification email (' . $mailEx->getMessage() . '). Please check internet connection or contact administration.'
         ]);
         exit;
     }

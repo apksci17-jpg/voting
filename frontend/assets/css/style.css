@@ -33,14 +33,50 @@
     -moz-osx-font-smoothing: grayscale;
 }
 
-html, body {
+html {
+    width: 100%;
+    min-height: 100%;
+    background-color: #f8fafc;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
     background-color: #f8fafc;
     color: var(--text-main);
-    display: flex;
-    min-height: 100vh;
     overflow-x: hidden;
-    overscroll-behavior: none !important;
-    overscroll-behavior-y: none !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Solid dark status bar notch filler for mobile webviews (#0f172a) */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top, 0px);
+    background-color: #0f172a;
+    z-index: 999999;
+    pointer-events: none;
+}
+
+/* Solid dark bottom navigation bar safe area filler for mobile webviews (#0f172a) */
+body::after {
+    content: '';
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-bottom, 0px);
+    background-color: #0f172a;
+    z-index: 999999;
+    pointer-events: none;
 }
 
 /* ==========================================================================
@@ -265,6 +301,8 @@ button:active, .btn:active {
     min-height: 100vh;
     position: relative;
     overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .login-outer-frame {
@@ -2325,21 +2363,14 @@ body.sidebar-drawer-active {
    NATIVE MOBILE APP BEHAVIOR, TOUCH TUNING & CLICKABLE CANDIDATE MODALS
    ========================================================================== */
 
-/* 1. Global Touch Optimization & Mobile Polish (Elastic Bounce Eradicated) */
+/* 1. Global Touch Optimization & Mobile Polish */
 html, body {
     -webkit-tap-highlight-color: transparent !important;
-    touch-action: manipulation;
-    overscroll-behavior: none !important;
-    overscroll-behavior-y: none !important;
-    overscroll-behavior-x: none !important;
-    -webkit-overflow-scrolling: auto !important;
 }
 
-/* Eliminate elastic rubber-band bouncing on all scrollable application containers */
-.main-wrapper, .content-body, .sidebar, .candidate-modal-sheet, .app-container {
-    overscroll-behavior: none !important;
-    overscroll-behavior-y: none !important;
-    -webkit-overflow-scrolling: auto !important;
+/* Ensure modal sheets and sidebar have smooth momentum scrolling */
+.candidate-modal-sheet, .sidebar {
+    -webkit-overflow-scrolling: touch;
 }
 
 /* Prevent accidental text highlighting during touch drags on controls */

@@ -261,3 +261,16 @@ const api = {
         }
     }
 };
+
+// Native mobile system bars tuning (Capacitor StatusBar)
+function initNativeSystemBars() {
+    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.StatusBar) {
+        const StatusBar = window.Capacitor.Plugins.StatusBar;
+        StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+        StatusBar.setBackgroundColor({ color: '#0f172a' }).catch(() => {});
+        StatusBar.setStyle({ style: 'DARK' }).catch(() => {});
+    }
+}
+initNativeSystemBars();
+document.addEventListener('DOMContentLoaded', initNativeSystemBars);
+

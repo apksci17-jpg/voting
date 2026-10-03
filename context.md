@@ -222,10 +222,35 @@ This document maintains a comprehensive record of all changes, features, archite
 
 ---
 
+### N. Capacitor Mobile Installation & Isolated Frontend Packaging (v8.5.2)
+- **Stakeholder Directive**: Install Capacitor to the project ensuring that **only the frontend** is bundled in the mobile app, using the latest versions.
+- **Node.js Environment Modernization**:
+  - Capacitor 8 CLI requires Node.js `>=22.0.0`. Switched Node environment from `v20.20.2` to `v24.12.0` using Windows `nvm use 24.12.0`.
+- **Latest Capacitor 8 Toolchain**:
+  - Installed `@capacitor/core@8.5.2`, `@capacitor/android@8.5.2`, and `@capacitor/ios@8.5.2` as core dependencies.
+  - Installed `@capacitor/cli@8.5.2` as development dependency.
+- **Isolated Frontend WebDir Configuration (`capacitor.config.json`)**:
+  - Configured `"webDir": "frontend"` so that Capacitor only extracts and packages the static presentation files (`frontend/index.html`, `frontend/login.html`, `frontend/admin/`, `frontend/voter/`, `frontend/assets/`, `frontend/js/`).
+  - Completely excludes backend PHP scripts, database schemas, Docker files, and server scripts from the mobile application package.
+  - Configured `androidScheme: "https"` and `cleartext: true` for seamless connectivity to the Railway remote API (`REMOTE_API_URL`).
+- **Native Android Project Initialization (`android/`)**:
+  - Initialized native Android container via `npx cap add android`.
+  - Verified asset mirroring: `android/app/src/main/assets/public/` contains strictly pure frontend client files and zero server-side code.
+- **Client Route Portability (`frontend/js/api.js`)**:
+  - Implemented `api.redirectToLogin()` in `api.js` ensuring that 401 unauthenticated redirects cleanly navigate to `../login.html` inside native webviews without expecting a `/frontend/` root path.
+- **Build Isolation Guardrails (`.dockerignore` & `.gitignore`)**:
+  - Added `node_modules/`, `android/`, `ios/`, and `.capacitor/` to `.dockerignore` to prevent Docker image bloat and keep Railway PaaS container deployments fast.
+  - Added `.gitignore` to prevent tracking of dependencies and build caches.
+
+---
+
 ## 3. Current Directory & File Inventory
 
 ```
 c:/xampp/htdocs/voting/
+├── android/                            # Native Android Studio Project (Capacitor Container)
+│   ├── app/src/main/assets/public/     # Pure frontend assets strictly mirrored
+│   └── build.gradle                    # Android Gradle build scripts
 ├── backend/
 │   ├── api/
 │   │   ├── .htaccess               # FastCGI Bearer authorization & CORS rules
@@ -247,7 +272,7 @@ c:/xampp/htdocs/voting/
 │   │   └── pdf_export.php          # Certified election audit report generator
 │   └── backups/                    # Storage directory for certified PDF archives
 │
-├── frontend/
+├── frontend/                       # Static Decoupled Client (Mirrored to Capacitor WebDir)
 │   ├── admin/
 │   │   ├── candidates.html         # Candidate CRUD management & platform verification
 │   │   ├── dashboard.html          # Administrative analytics & quick actions
@@ -262,7 +287,7 @@ c:/xampp/htdocs/voting/
 │   │   │   └── login_bg.png        # Official ballot box voting graphic
 │   │   └── uploads/                # Uploaded candidate profile photos
 │   ├── js/
-│   │   ├── api.js                  # Frontend API network wrapper, non-JSON error handling & token persistence
+│   │   ├── api.js                  # Frontend API network wrapper & token persistence
 │   │   └── components.js           # Layout injector, responsive drawer & SVG icons
 │   ├── voter/
 │   │   ├── ballot.html             # Digital ballot selection cards with SVG checkmarks
@@ -273,11 +298,15 @@ c:/xampp/htdocs/voting/
 │   ├── index.html                  # Frontend root redirector to login.html
 │   └── login.html                  # Official glassmorphism sign-in screen
 │
+├── capacitor.config.json           # Capacitor configuration (webDir: "frontend")
+├── package.json                    # Project metadata & Capacitor 8 dependencies
+├── package-lock.json               # Deterministic dependency tree lock
 ├── index.php                       # Root redirector to frontend/login.html
 ├── Dockerfile                      # Production container recipe for Railway.app & cloud PaaS
 ├── entrypoint.sh                   # Startup container initializer (MPM fix, port binding, permissions)
 ├── railway.json                    # Railway deployment & builder configuration as code
-├── .dockerignore                   # Docker build exclusions
+├── .dockerignore                   # Docker build exclusions (node_modules, android, ios)
+├── .gitignore                      # Git exclusions (node_modules, .capacitor)
 ├── .gitattributes                  # Git line-ending normalization (LF for shell scripts)
 ├── RULES.md                        # Architectural rules & operating principles
 ├── SKILL.md                        # Skill definition & implementation guide

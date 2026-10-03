@@ -24,6 +24,10 @@ c:/xampp/htdocs/voting/
 │       └── ovs-implementation/
 │           └── SKILL.md            # Implementation reference cheatsheet
 │
+├── android/                        # Native Android Studio Project (Capacitor Container)
+│   ├── app/src/main/assets/public/ # Pure frontend static assets (isolated mirror)
+│   └── build.gradle                # Android Gradle build configuration
+│
 ├── backend/                        # Headless PHP REST API & Database Services
 │   ├── api/                        # JSON API Endpoints
 │   │   ├── .htaccess               # FastCGI Bearer authorization & CORS rules
@@ -49,11 +53,11 @@ c:/xampp/htdocs/voting/
 │   │
 │   └── backups/                    # Automated PDF Audit Archive Storage
 │
-├── frontend/                       # Static Client (Capacitor Mobile / Web App)
+├── frontend/                       # Static Decoupled Client (Mirrored to Capacitor WebDir)
 │   ├── index.html / login.html     # Unified Sign-in screen with glassmorphism & password toggle
 │   │
 │   ├── js/                         # Client Logic & Services
-│   │   ├── api.js                  # Dynamic API network client, non-JSON error catching & token persistence
+│   │   ├── api.js                  # Dynamic API network client & token persistence
 │   │   └── components.js           # Shared layout injector, responsive drawer & SVG icons
 │   │
 │   ├── assets/                     # Static Design Assets
@@ -78,11 +82,15 @@ c:/xampp/htdocs/voting/
 │       ├── confirm_vote.html       # Ballot summary review & final cryptographic submission
 │       └── profile.html            # Voter identity view & display name updater
 │
+├── capacitor.config.json           # Capacitor configuration (webDir: "frontend")
+├── package.json                    # Project metadata & Capacitor 8 dependencies
+├── package-lock.json               # Deterministic dependency tree lock
 ├── index.php                       # Root entry point (clean redirect to frontend/login.html)
 ├── Dockerfile                      # Production container recipe for Railway.app & cloud PaaS
 ├── entrypoint.sh                   # Startup container initializer (MPM fix, port binding, permissions)
 ├── railway.json                    # Railway deployment & builder configuration as code
-├── .dockerignore                   # Docker build exclusions
+├── .dockerignore                   # Docker build exclusions (node_modules, android, ios)
+├── .gitignore                      # Git exclusions (node_modules, .capacitor)
 ├── .gitattributes                  # Git line-ending normalization (LF for shell scripts)
 ├── RULES.md                        # Architecture & Implementation Rules
 ├── SKILL.md                        # Skill Specification

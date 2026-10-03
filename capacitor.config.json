@@ -1,0 +1,9 @@
+{
+  "appId": "com.tomorrowvote.app",
+  "appName": "Tomorrow Vote",
+  "webDir": "frontend",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  }
+}

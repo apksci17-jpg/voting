@@ -74,6 +74,15 @@ const api = {
     clearToken: () => localStorage.removeItem('voter_token'),
     showLoading: () => updateFullscreenLoader('start'),
     hideLoading: () => updateFullscreenLoader('finish'),
+    redirectToLogin: () => {
+        api.clearToken();
+        if (isCapacitor) {
+            const inSubdir = window.location.pathname.includes('/admin/') || window.location.pathname.includes('/voter/');
+            window.location.href = inSubdir ? '../login.html' : 'login.html';
+        } else {
+            window.location.href = `${basePath}/frontend/login.html`;
+        }
+    },
 
     request: async (endpoint, options = {}) => {
         updateFullscreenLoader('start');
@@ -91,8 +100,7 @@ const api = {
             });
 
             if (response.status === 401) {
-                api.clearToken();
-                window.location.href = `${basePath}/frontend/login.html`;
+                api.redirectToLogin();
                 throw new Error('Unauthorized');
             }
 
@@ -159,8 +167,7 @@ const api = {
 
                 if (!response.ok) {
                     if (response.status === 401) {
-                        api.clearToken();
-                        window.location.href = `${basePath}/frontend/login.html`;
+                        api.redirectToLogin();
                         throw new Error('Unauthorized');
                     }
                     const errData = await response.json().catch(() => ({}));

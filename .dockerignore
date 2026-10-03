@@ -2,3 +2,7 @@
 .agents
 scratch/
 tests/
+node_modules/
+android/
+ios/
+.capacitor/

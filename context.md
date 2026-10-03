@@ -347,14 +347,23 @@ c:/xampp/htdocs/voting/
   - Standard PaaS providers (e.g. Railway Free/Hobby tiers) block outbound TCP ports 25, 465, and 587 to prevent spam abuse, causing raw SMTP handshakes to time out (`code: 110`).
   - **Graceful Fallback Mode**: The backend catches network timeouts and provides a fallback code (`dev_otp`) with a clear cloud hosting notice banner on the login UI, preventing voters and testers from being locked out of elections.
   - **HTTPS Port 443 Support**: Added native support in `backend/includes/mailer.php` for `MAIL_WEBHOOK_URL` (Google Apps Script Web App / HTTPS Webhooks) and `BREVO_API_KEY` (Brevo HTTPS REST API) which communicate over standard outbound HTTPS (Port 443), completely bypassing platform SMTP port restrictions.
-  - **Mobile 2FA Experience**: Monospace 6-digit code input with auto-paste, auto-submit on 6 digits, 10-minute expiration countdown, and 30-second resend cooldown.
+### H. Pre-Vote Biometric Authentication & Password Fallback
+- **Pre-Vote Native Biometrics via Capacitor**:
+  - Integrated `@capgo/capacitor-native-biometric` (v8.7.0) to authenticate student voters before sealing their ballot on `confirm_vote.html`.
+  - Prompts device-native biometric prompt (Fingerprint / Face ID) via Android BiometricPrompt API.
+  - Automatically queries hardware availability via `api.biometrics.isAvailable()` and displays an emerald "Biometric Authentication Enabled" shield badge on compatible mobile devices.
+- **In-App Password Verification Fallback**:
+  - If biometric hardware is unavailable, not enrolled, cancelled by the user, or fails verification, the voter is presented with an elevated Password Verification Modal.
+  - Voter inputs their password, which is verified against `POST /backend/api/voter.php?action=verify_password` and validated atomically during `cast_vote`.
+  - Upon successful verification, the ballot is sealed, encrypted with AES-256-CBC, and committed.
 
 ---
 
 ## 4. Key Operating Principles & Constraints
 1. **Headless Discipline**: PHP files reside strictly in `backend/` and output JSON or PDF documents. All HTML rendering is performed by the `frontend/` static client.
 2. **Capacitor Mobile Ready**: All asset and API paths resolve dynamically. State is managed via `localStorage` and `sessionStorage`.
-3. **No Biometric Artifacts**: Zero camera or biometric facial dependencies.
+3. **Hardware Biometrics via Capacitor**: Uses modern OS-level BiometricPrompt (fingerprint/face) with password fallback; zero external AI/camera facial recognition dependencies.
 4. **SVG Icon Standard**: No raw emojis as navigation or action icons; strictly utilize inline vector SVGs.
 5. **One Student, One Vote**: Enforced atomically via MySQL transactions and `has_voted` flags.
+
 

@@ -78,6 +78,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'cast_vote') {
         exit;
     }
 
+    // Verify password if provided as biometric fallback
+    $password = $data['password'] ?? '';
+    if (!empty($password) && !password_verify($password, $user['password_hash'])) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Incorrect voter password. Verification failed.']);
+        exit;
+    }
+
     $voteTimestamp = date('Y-m-d H:i:s');
     $success = false;
 
@@ -149,6 +157,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'profile') {
             'email' => $user['email']
         ]
     ]);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'verify_password') {
+    $user = requireApiVoter();
+    $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $password = $data['password'] ?? '';
+
+    if (empty($password)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Password is required for verification.']);
+        exit;
+    }
+
+    if (!password_verify($password, $user['password_hash'])) {
+        http_response_code(401);
+        echo json_encode(['success' => false, 'error' => 'Incorrect password. Verification failed.']);
+        exit;
+    }
+
+    echo json_encode(['success' => true]);
     exit;
 }
 

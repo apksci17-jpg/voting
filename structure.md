@@ -110,6 +110,11 @@ c:/xampp/htdocs/voting/
   4. The voter enters the 6-digit code on `login.html`, which calls `POST /backend/api/auth.php?action=verify_otp`. Upon successful validation, the OTP is invalidated and the 64-character session token is issued. A resend endpoint (`action=resend_otp`) with a 30-second cooldown is available.
   5. Client saves token in `localStorage.setItem('voter_token', token)`.
   6. Subsequent API calls attach header `Authorization: Bearer <token>`.
+- **Pre-Vote Biometric Authentication & Password Fallback**:
+  - Prior to sealing and casting the ballot on `confirm_vote.html`, the application initiates biometric verification using `@capgo/capacitor-native-biometric`.
+  - On supported native mobile hardware (Android/iOS), the system prompts for fingerprint or face authentication (`verifyIdentity`).
+  - If biometric hardware is unavailable, not enrolled, cancelled, or fails, the voter is presented with a secure in-app Password Verification Modal.
+  - The password is validated via `POST /backend/api/voter.php?action=verify_password` and verified again atomically during `action=cast_vote`.
 - **CORS Handling**: `backend/config/cors.php` handles preflight `OPTIONS` requests and sets permissive headers, enabling Capacitor mobile apps (`capacitor://localhost`) or remote frontends to communicate seamlessly with the backend.
 
 ### 3.2 UI Design System, Typography & Animations

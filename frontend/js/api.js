@@ -134,9 +134,39 @@ const api = {
     voter: {
         dashboard: () => api.get('voter.php?action=dashboard'),
         candidates: () => api.get('voter.php?action=candidates'),
-        castVote: (votes) => api.post('voter.php?action=cast_vote', { votes }),
+        castVote: (votes, password = '') => api.post('voter.php?action=cast_vote', { votes, password }),
+        verifyPassword: (password) => api.post('voter.php?action=verify_password', { password }),
         profile: () => api.get('voter.php?action=profile'),
         updateProfile: (full_name) => api.post('voter.php?action=update_profile', { full_name })
+    },
+
+    biometrics: {
+        isAvailable: async () => {
+            if (window.Capacitor && window.Capacitor.isPluginAvailable && window.Capacitor.isPluginAvailable('NativeBiometric')) {
+                try {
+                    const NativeBiometric = window.Capacitor.Plugins.NativeBiometric;
+                    const res = await NativeBiometric.isAvailable();
+                    return !!(res && res.isAvailable);
+                } catch (e) {
+                    console.warn('Biometrics availability check error:', e);
+                    return false;
+                }
+            }
+            return false;
+        },
+        verify: async (options = {}) => {
+            if (window.Capacitor && window.Capacitor.isPluginAvailable && window.Capacitor.isPluginAvailable('NativeBiometric')) {
+                const NativeBiometric = window.Capacitor.Plugins.NativeBiometric;
+                return await NativeBiometric.verifyIdentity({
+                    reason: options.reason || 'Verify your identity to cast your ballot',
+                    title: options.title || 'Biometric Verification',
+                    subtitle: options.subtitle || 'Cast Official Ballot',
+                    description: options.description || 'Please scan your fingerprint or face to seal your vote.',
+                    negativeButtonText: options.negativeButtonText || 'Use Password'
+                });
+            }
+            throw new Error('Biometric hardware is not available on this device.');
+        }
     },
 
     admin: {

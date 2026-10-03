@@ -28,6 +28,8 @@ CREATE TABLE `users` (
   `grade_level` VARCHAR(50) DEFAULT '3rd Year',
   `section` VARCHAR(50) DEFAULT 'BSIT 31008',
   `session_token` VARCHAR(255) DEFAULT NULL,
+  `login_otp` VARCHAR(10) DEFAULT NULL,
+  `login_otp_expires_at` DATETIME DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

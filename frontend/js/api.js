@@ -125,6 +125,8 @@ const api = {
 
     auth: {
         login: (username, password) => api.post('auth.php?action=login', { username, password }),
+        verifyOtp: (otp_user_id, otp) => api.post('auth.php?action=verify_otp', { otp_user_id, otp }),
+        resendOtp: (otp_user_id) => api.post('auth.php?action=resend_otp', { otp_user_id }),
         logout: () => api.post('auth.php?action=logout'),
         me: () => api.get('auth.php?action=me')
     },

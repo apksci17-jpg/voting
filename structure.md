@@ -103,11 +103,13 @@ c:/xampp/htdocs/voting/
 ## 3. Core Component Architecture
 
 ### 3.1 Authentication & Security Architecture
-- **Stateless Bearer Token Flow**:
+- **Stateless Bearer Token & Voter Email OTP Flow**:
   1. Voter/Admin submits credentials (`student_id`/`username`/`email` + `password`) to `POST /backend/api/auth.php?action=login`.
-  2. Server verifies hashed or plaintext passwords, generates a cryptographically secure 64-character token (`bin2hex(random_bytes(32))`), and stores it in `users.session_token`.
-  3. Client saves token in `localStorage.setItem('voter_token', token)`.
-  4. Subsequent API calls attach header `Authorization: Bearer <token>`.
+  2. For **Admins**: Server validates password and immediately generates a 64-character token (`bin2hex(random_bytes(32))`), saving it in `users.session_token`.
+  3. For **Voters**: Server generates a 6-digit numeric verification code (`random_int(100000, 999999)`), sets a 10-minute expiration timestamp in `users.login_otp_expires_at`, and dispatches a certified HTML email via **PHPMailer** using Gmail SMTP. The API returns `{ requires_otp: true, otp_user_id, masked_email }`.
+  4. The voter enters the 6-digit code on `login.html`, which calls `POST /backend/api/auth.php?action=verify_otp`. Upon successful validation, the OTP is invalidated and the 64-character session token is issued. A resend endpoint (`action=resend_otp`) with a 30-second cooldown is available.
+  5. Client saves token in `localStorage.setItem('voter_token', token)`.
+  6. Subsequent API calls attach header `Authorization: Bearer <token>`.
 - **CORS Handling**: `backend/config/cors.php` handles preflight `OPTIONS` requests and sets permissive headers, enabling Capacitor mobile apps (`capacitor://localhost`) or remote frontends to communicate seamlessly with the backend.
 
 ### 3.2 UI Design System, Typography & Animations

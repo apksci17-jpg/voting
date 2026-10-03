@@ -88,12 +88,12 @@
 
             <!-- Header Titles -->
             <h1 class="login-title">Tomorrow Vote</h1>
-            <p class="login-subtitle">For the voters, use your school account</p>
+            <p class="login-subtitle" id="pageSubtitle">For the voters, use your school account</p>
 
             <!-- Error Banner -->
             <div id="errorBox" class="login-alert-failed" style="display: none;"></div>
 
-            <!-- Login Form -->
+            <!-- Primary Login Form -->
             <form id="loginForm" class="login-form">
                 <div class="form-group">
                     <label for="username" class="login-label">Student Number / Username</label>
@@ -140,6 +140,64 @@
                 </button>
             </form>
 
+            <!-- 2FA Email OTP Verification Form -->
+            <form id="otpForm" class="login-form" style="display: none;">
+                <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; display: flex; align-items: flex-start; gap: 12px; text-align: left;">
+                    <div style="color: #2563eb; flex-shrink: 0; margin-top: 2px;">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                    </div>
+                    <div>
+                        <div style="font-size: 13px; font-weight: 800; color: #1e3a8a;">Code Sent to Email</div>
+                        <div style="font-size: 12px; color: #3b82f6; margin-top: 2px; word-break: break-all;">
+                            We sent a 6-digit code to <strong id="otpMaskedEmail" style="color: #1e40af;"></strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="otpCode" class="login-label" style="text-align: center; display: block;">Enter 6-Digit Code</label>
+                    <input 
+                        type="text" 
+                        id="otpCode" 
+                        class="login-input" 
+                        placeholder="••••••" 
+                        maxlength="6" 
+                        inputmode="numeric" 
+                        pattern="[0-9]*" 
+                        autocomplete="one-time-code"
+                        style="font-size: 28px; text-align: center; letter-spacing: 10px; font-weight: 800; font-family: monospace; padding: 14px 10px;"
+                        required 
+                    >
+                </div>
+
+                <div id="otpTimerBox" style="text-align: center; font-size: 12px; color: #64748b; font-weight: 600; margin-bottom: 20px;">
+                    Code expires in: <span id="countdownText" style="color: #2563eb; font-weight: 800;">10:00</span>
+                </div>
+
+                <button type="submit" class="btn-signin" id="verifyOtpBtn">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Verify & Sign In</span>
+                </button>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; font-size: 13px;">
+                    <button type="button" id="backToLoginBtn" style="background: none; border: none; color: #64748b; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 6px 0; touch-action: manipulation;">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        <span>Back to Login</span>
+                    </button>
+                    <button type="button" id="resendOtpBtn" style="background: none; border: none; color: #2563eb; font-weight: 800; cursor: pointer; padding: 6px 0; touch-action: manipulation;">
+                        Resend Code
+                    </button>
+                </div>
+            </form>
+
             <div class="login-footer-text">
                 Bestlink College of the Philippines &bull; Supreme Student Council
             </div>
@@ -160,7 +218,94 @@
             toggleBtn.innerHTML = isPassword ? eyeOffSvg : eyeSvg;
         });
 
-        // Form submission handling
+        let activeOtpUserId = null;
+        let countdownInterval = null;
+        let resendCooldownInterval = null;
+        let resendCooldownSecs = 0;
+
+        function startOtpCountdown(durationSeconds = 600) {
+            clearInterval(countdownInterval);
+            let remaining = durationSeconds;
+            const textEl = document.getElementById('countdownText');
+            
+            function update() {
+                const mins = Math.floor(remaining / 60);
+                const secs = remaining % 60;
+                textEl.innerText = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                if (remaining <= 0) {
+                    clearInterval(countdownInterval);
+                    textEl.innerText = 'Expired';
+                    textEl.style.color = '#ef4444';
+                }
+                remaining--;
+            }
+            update();
+            countdownInterval = setInterval(update, 1000);
+        }
+
+        function startResendCooldown(seconds = 30) {
+            clearInterval(resendCooldownInterval);
+            resendCooldownSecs = seconds;
+            const resendBtn = document.getElementById('resendOtpBtn');
+            resendBtn.disabled = true;
+            resendBtn.style.opacity = '0.6';
+            resendBtn.style.cursor = 'not-allowed';
+
+            function update() {
+                if (resendCooldownSecs > 0) {
+                    resendBtn.innerText = `Resend in ${resendCooldownSecs}s`;
+                    resendCooldownSecs--;
+                } else {
+                    clearInterval(resendCooldownInterval);
+                    resendBtn.disabled = false;
+                    resendBtn.style.opacity = '1';
+                    resendBtn.style.cursor = 'pointer';
+                    resendBtn.innerText = 'Resend Code';
+                }
+            }
+            update();
+            resendCooldownInterval = setInterval(update, 1000);
+        }
+
+        function showOtpStep(otpUserId, maskedEmail) {
+            activeOtpUserId = otpUserId;
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('otpForm').style.display = 'block';
+            document.getElementById('otpMaskedEmail').innerText = maskedEmail;
+            document.getElementById('otpCode').value = '';
+            document.getElementById('otpCode').focus();
+            document.getElementById('pageSubtitle').innerText = 'Two-Factor Email Verification';
+            document.getElementById('errorBox').style.display = 'none';
+            startOtpCountdown(600);
+            startResendCooldown(30);
+        }
+
+        function showLoginStep() {
+            clearInterval(countdownInterval);
+            clearInterval(resendCooldownInterval);
+            activeOtpUserId = null;
+            document.getElementById('otpForm').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('pageSubtitle').innerText = 'For the voters, use your school account';
+            document.getElementById('errorBox').style.display = 'none';
+            document.getElementById('password').value = '';
+            document.getElementById('submitBtn').disabled = false;
+            document.getElementById('submitBtn').innerHTML = `
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span>Secure Login</span>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            `;
+            document.getElementById('password').focus();
+        }
+
+        document.getElementById('backToLoginBtn').addEventListener('click', showLoginStep);
+
+        // Form submission handling for primary login
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('username').value.trim();
@@ -174,6 +319,14 @@
 
             try {
                 const res = await api.auth.login(username, password);
+
+                // If voter requires 2FA OTP verification:
+                if (res.success && res.requires_otp) {
+                    showOtpStep(res.otp_user_id, res.masked_email);
+                    return;
+                }
+
+                // If admin or direct login:
                 if (res.success && res.token) {
                     api.setToken(res.token);
                     submitBtn.innerHTML = '<span>Login Successful! Redirecting...</span>';
@@ -200,6 +353,92 @@
                         <polyline points="9 18 15 12 9 6"></polyline>
                     </svg>
                 `;
+            }
+        });
+
+        // Form submission handling for OTP verification
+        document.getElementById('otpForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const otpCode = document.getElementById('otpCode').value.trim();
+            const errorBox = document.getElementById('errorBox');
+            const verifyBtn = document.getElementById('verifyOtpBtn');
+
+            if (!otpCode || otpCode.length !== 6) {
+                errorBox.style.display = 'block';
+                errorBox.className = 'login-alert-failed';
+                errorBox.innerText = 'Please enter a valid 6-digit verification code.';
+                return;
+            }
+
+            errorBox.style.display = 'none';
+            verifyBtn.disabled = true;
+            verifyBtn.innerHTML = '<span>Verifying Code...</span>';
+
+            try {
+                const res = await api.auth.verifyOtp(activeOtpUserId, otpCode);
+                if (res.success && res.token) {
+                    api.setToken(res.token);
+                    verifyBtn.innerHTML = '<span>Verified! Redirecting...</span>';
+                    window.location.href = 'voter/dashboard.html';
+                } else {
+                    throw new Error(res.error || 'Invalid verification code');
+                }
+            } catch (err) {
+                errorBox.style.display = 'block';
+                errorBox.className = 'login-alert-failed';
+                errorBox.innerText = err.message || 'Incorrect verification code. Please check your email.';
+                verifyBtn.disabled = false;
+                verifyBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Verify & Continue</span>
+                `;
+                document.getElementById('otpCode').select();
+            }
+        });
+
+        // Resend OTP handler
+        document.getElementById('resendOtpBtn').addEventListener('click', async () => {
+            if (resendCooldownSecs > 0 || !activeOtpUserId) return;
+            const errorBox = document.getElementById('errorBox');
+            errorBox.style.display = 'none';
+
+            try {
+                const res = await api.auth.resendOtp(activeOtpUserId);
+                if (res.success) {
+                    startResendCooldown(30);
+                    startOtpCountdown(600);
+                    document.getElementById('otpCode').value = '';
+                    document.getElementById('otpCode').focus();
+                    errorBox.style.display = 'block';
+                    errorBox.style.background = '#f0fdf4';
+                    errorBox.style.color = '#166534';
+                    errorBox.style.border = '1px solid #bbf7d0';
+                    errorBox.innerText = res.message || 'A fresh verification code has been sent to your email.';
+                    setTimeout(() => {
+                        errorBox.style.background = '';
+                        errorBox.style.color = '';
+                        errorBox.style.border = '';
+                        errorBox.style.display = 'none';
+                    }, 4500);
+                } else {
+                    throw new Error(res.error || 'Failed to resend verification code');
+                }
+            } catch (err) {
+                errorBox.style.display = 'block';
+                errorBox.style.background = '';
+                errorBox.style.color = '';
+                errorBox.style.border = '';
+                errorBox.innerText = err.message || 'Failed to resend code. Please try again.';
+            }
+        });
+
+        // Auto-submit when 6 digits are typed
+        document.getElementById('otpCode').addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+            if (e.target.value.length === 6) {
+                document.getElementById('otpForm').requestSubmit();
             }
         });
     </script>

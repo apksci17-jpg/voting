@@ -50,6 +50,12 @@ function getDBConnection() {
                     $sql = file_get_contents($schemaFile);
                     $pdo->exec($sql);
                 }
+            } else {
+                // Ensure login_otp columns exist in users table
+                $colCheck = $pdo->query("SHOW COLUMNS FROM users LIKE 'login_otp'");
+                if ($colCheck && $colCheck->rowCount() === 0) {
+                    $pdo->exec("ALTER TABLE users ADD COLUMN `login_otp` VARCHAR(10) DEFAULT NULL, ADD COLUMN `login_otp_expires_at` DATETIME DEFAULT NULL");
+                }
             }
         } catch (Exception $initEx) {
             // Proceed even if auto-init is skipped or restricted
@@ -98,6 +104,16 @@ function getDBConnection() {
             } catch (Exception $ex) {
                 // Ignore and proceed to user-friendly error output below
             }
+        }
+        
+        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/api/') !== false) {
+            http_response_code(500);
+            header('Content-Type: application/json; charset=UTF-8');
+            echo json_encode([
+                'success' => false,
+                'error' => 'Database connection failed: ' . $e->getMessage()
+            ]);
+            exit;
         }
         
         die("<div style='font-family:sans-serif; padding:30px; max-width:640px; margin:40px auto; background:#fee2e2; border:2px solid #ef4444; border-radius:12px; color:#991b1b; box-shadow:0 4px 15px rgba(0,0,0,0.1);'>"

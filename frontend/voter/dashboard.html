@@ -88,12 +88,12 @@
                                     <div style="flex: 1;">
                                         <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 800; color: #14532d;">Official Ballot Successfully Cast!</h3>
                                         <p style="margin: 0 0 12px 0; font-size: 13px; color: #166534; line-height: 1.5;">
-                                            A certified, password-protected copy of your ballot receipt has been sent to <strong>${email}</strong>.<br>
-                                            To open and view your PDF receipt, use your <strong>Student ID</strong> (<code>${studentId}</code>) as the unlock password.
+                                            A certified, password-protected Electronic Statement of Ballot has been sent to <strong>${email}</strong>.<br>
+                                            To open and view your attached PDF statement, use your <strong>Student ID</strong> (<code>${studentId}</code>) as the unlock password.
                                         </p>
                                         <a href="${api.voter.getReceiptDownloadUrl()}" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background: #15803d; color: #ffffff; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; box-shadow: 0 2px 8px rgba(21, 128, 61, 0.25);">
                                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                            <span>Download Protected Receipt (.PDF)</span>
+                                            <span>Download Statement of Ballot (.PDF)</span>
                                         </a>
                                     </div>
                                 </div>
@@ -156,7 +156,7 @@
                                                 </div>
                                                 <a href="${api.voter.getReceiptDownloadUrl()}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: #1e40af; text-decoration: none; background: #eff6ff; padding: 8px 12px; border-radius: 8px; border: 1px solid #bfdbfe; width: fit-content;">
                                                     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                                                    <span>Download Protected Receipt (.PDF)</span>
+                                                    <span>Download Statement of Ballot (.PDF)</span>
                                                 </a>
                                             </div>
                                         ` : `

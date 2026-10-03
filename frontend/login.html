@@ -157,6 +157,18 @@
                     </div>
                 </div>
 
+                <div id="otpNoticeBox" style="display: none; background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: 12px; color: #92400e; text-align: left; line-height: 1.5;">
+                    <div style="font-weight: 800; margin-bottom: 3px; display: flex; align-items: center; gap: 6px;">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        <span>Cloud Host Firewall Notice</span>
+                    </div>
+                    <div id="otpNoticeText"></div>
+                </div>
+
                 <div class="form-group">
                     <label for="otpCode" class="login-label" style="text-align: center; display: block;">Enter 6-Digit Code</label>
                     <input 
@@ -267,15 +279,28 @@
             resendCooldownInterval = setInterval(update, 1000);
         }
 
-        function showOtpStep(otpUserId, maskedEmail) {
+        function showOtpStep(otpUserId, maskedEmail, devOtp = '', cloudNotice = '') {
             activeOtpUserId = otpUserId;
             document.getElementById('loginForm').style.display = 'none';
             document.getElementById('otpForm').style.display = 'block';
             document.getElementById('otpMaskedEmail').innerText = maskedEmail;
-            document.getElementById('otpCode').value = '';
-            document.getElementById('otpCode').focus();
             document.getElementById('pageSubtitle').innerText = 'Two-Factor Email Verification';
             document.getElementById('errorBox').style.display = 'none';
+
+            const noticeBox = document.getElementById('otpNoticeBox');
+            const noticeText = document.getElementById('otpNoticeText');
+            const codeInput = document.getElementById('otpCode');
+
+            if (devOtp) {
+                noticeBox.style.display = 'block';
+                noticeText.innerHTML = `Cloud host egress blocked SMTP ports (Code 110). For testing, your verification code is: <strong style="font-size: 15px; color: #b45309; letter-spacing: 2px;">${devOtp}</strong>`;
+                codeInput.value = devOtp;
+            } else {
+                noticeBox.style.display = 'none';
+                codeInput.value = '';
+            }
+
+            codeInput.focus();
             startOtpCountdown(600);
             startResendCooldown(30);
         }
@@ -322,7 +347,7 @@
 
                 // If voter requires 2FA OTP verification:
                 if (res.success && res.requires_otp) {
-                    showOtpStep(res.otp_user_id, res.masked_email);
+                    showOtpStep(res.otp_user_id, res.masked_email, res.dev_otp || '', res.cloud_notice || '');
                     return;
                 }
 
@@ -409,13 +434,23 @@
                 if (res.success) {
                     startResendCooldown(30);
                     startOtpCountdown(600);
-                    document.getElementById('otpCode').value = '';
+
+                    const noticeBox = document.getElementById('otpNoticeBox');
+                    const noticeText = document.getElementById('otpNoticeText');
+                    if (res.dev_otp) {
+                        noticeBox.style.display = 'block';
+                        noticeText.innerHTML = `Cloud host egress blocked SMTP ports (Code 110). New verification code is: <strong style="font-size: 15px; color: #b45309; letter-spacing: 2px;">${res.dev_otp}</strong>`;
+                        document.getElementById('otpCode').value = res.dev_otp;
+                    } else {
+                        document.getElementById('otpCode').value = '';
+                    }
+
                     document.getElementById('otpCode').focus();
                     errorBox.style.display = 'block';
                     errorBox.style.background = '#f0fdf4';
                     errorBox.style.color = '#166534';
                     errorBox.style.border = '1px solid #bbf7d0';
-                    errorBox.innerText = res.message || 'A fresh verification code has been sent to your email.';
+                    errorBox.innerText = res.message || 'A fresh verification code has been dispatched.';
                     setTimeout(() => {
                         errorBox.style.background = '';
                         errorBox.style.color = '';

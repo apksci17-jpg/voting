@@ -338,6 +338,17 @@ c:/xampp/htdocs/voting/
 └── context.md                      # Comprehensive project memory log (This Document)
 ```
 
+### G. Two-Factor Email OTP Verification & Cloud Firewall Mitigation
+- **Two-Factor Voter Verification**:
+  - Voter accounts require a 6-digit numeric OTP (`random_int(100000, 999999)`) with a 10-minute expiry window on each login attempt.
+  - Verification codes are persisted in `users.login_otp` and `users.login_otp_expires_at`, with automated schema self-healing on virgin databases.
+  - Direct login for administrative users without OTP to ensure immediate administrative access.
+- **Cloud Egress Firewall Outbound SMTP Mitigation (Error Code 110)**:
+  - Standard PaaS providers (e.g. Railway Free/Hobby tiers) block outbound TCP ports 25, 465, and 587 to prevent spam abuse, causing raw SMTP handshakes to time out (`code: 110`).
+  - **Graceful Fallback Mode**: The backend catches network timeouts and provides a fallback code (`dev_otp`) with a clear cloud hosting notice banner on the login UI, preventing voters and testers from being locked out of elections.
+  - **HTTPS Port 443 Support**: Added native support in `backend/includes/mailer.php` for `MAIL_WEBHOOK_URL` (Google Apps Script Web App / HTTPS Webhooks) and `BREVO_API_KEY` (Brevo HTTPS REST API) which communicate over standard outbound HTTPS (Port 443), completely bypassing platform SMTP port restrictions.
+  - **Mobile 2FA Experience**: Monospace 6-digit code input with auto-paste, auto-submit on 6 digits, 10-minute expiration countdown, and 30-second resend cooldown.
+
 ---
 
 ## 4. Key Operating Principles & Constraints
@@ -346,3 +357,4 @@ c:/xampp/htdocs/voting/
 3. **No Biometric Artifacts**: Zero camera or biometric facial dependencies.
 4. **SVG Icon Standard**: No raw emojis as navigation or action icons; strictly utilize inline vector SVGs.
 5. **One Student, One Vote**: Enforced atomically via MySQL transactions and `has_voted` flags.
+

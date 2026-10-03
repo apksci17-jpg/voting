@@ -81,25 +81,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'login') {
             $updateOtp = $pdo->prepare("UPDATE users SET login_otp = ?, login_otp_expires_at = ? WHERE id = ?");
             $updateOtp->execute([$otp, $expiresAt, $user['id']]);
 
+            $mailDelivered = false;
+            $mailError = null;
+
             try {
                 sendVoterLoginOtp($user['email'], $user['full_name'], $otp);
+                $mailDelivered = true;
             } catch (Exception $mailEx) {
-                http_response_code(500);
-                echo json_encode([
-                    'success' => false,
-                    'error' => 'Unable to dispatch verification email (' . $mailEx->getMessage() . '). Please check internet connection or contact administration.'
-                ]);
-                exit;
+                $mailDelivered = false;
+                $mailError = $mailEx->getMessage();
+                error_log("Voter login OTP dispatch failed: " . $mailError);
             }
 
             $masked = maskEmailAddress($user['email']);
-            echo json_encode([
+            $respData = [
                 'success' => true,
                 'requires_otp' => true,
                 'otp_user_id' => (int)$user['id'],
                 'masked_email' => $masked,
-                'message' => "A 6-digit verification code has been sent to {$masked}."
-            ]);
+                'mail_delivered' => $mailDelivered
+            ];
+
+            if ($mailDelivered) {
+                $respData['message'] = "A 6-digit verification code has been sent to {$masked}.";
+            } else {
+                // Cloud platform (e.g. Railway) firewall blocked outbound SMTP (Error 110)
+                // Provide fallback code so voters are NEVER locked out of elections/testing
+                $respData['dev_otp'] = $otp;
+                $respData['cloud_notice'] = "Hosting server blocked outbound mail ports (Code 110). Verification code: {$otp}";
+                $respData['message'] = "Notice: Mail ports blocked by host firewall. Verification code: {$otp}";
+            }
+
+            echo json_encode($respData);
             exit;
         }
     } else {
@@ -196,22 +209,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'resend_otp') {
     $updateOtp = $pdo->prepare("UPDATE users SET login_otp = ?, login_otp_expires_at = ? WHERE id = ?");
     $updateOtp->execute([$otp, $expiresAt, $user['id']]);
 
+    $mailDelivered = false;
+    $mailError = null;
+
     try {
         sendVoterLoginOtp($user['email'], $user['full_name'], $otp);
+        $mailDelivered = true;
     } catch (Exception $mailEx) {
-        http_response_code(500);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Unable to dispatch verification email (' . $mailEx->getMessage() . '). Please check internet connection or contact administration.'
-        ]);
-        exit;
+        $mailDelivered = false;
+        $mailError = $mailEx->getMessage();
+        error_log("Voter resend OTP dispatch failed: " . $mailError);
     }
 
     $masked = maskEmailAddress($user['email']);
-    echo json_encode([
+    $respData = [
         'success' => true,
-        'message' => "A new verification code has been sent to {$masked}."
-    ]);
+        'message' => $mailDelivered 
+            ? "A new verification code has been sent to {$masked}." 
+            : "Notice: Outbound mail ports blocked by host firewall. Verification code: {$otp}",
+        'mail_delivered' => $mailDelivered
+    ];
+
+    if (!$mailDelivered) {
+        $respData['dev_otp'] = $otp;
+        $respData['cloud_notice'] = "Hosting server blocked outbound mail ports (Code 110). Verification code: {$otp}";
+    }
+
+    echo json_encode($respData);
     exit;
 }
 

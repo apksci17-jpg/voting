@@ -262,15 +262,40 @@ const api = {
     }
 };
 
-// Native mobile system bars tuning (Capacitor StatusBar)
+// Native mobile system bars tuning (Capacitor StatusBar & Native Edge-to-Edge)
 function initNativeSystemBars() {
+    const isDarkPage = (document.body && document.body.classList.contains('login-body')) || 
+                       window.location.pathname.endsWith('login.html') || 
+                       window.location.pathname.endsWith('index.html') || 
+                       window.location.pathname === '/' ||
+                       window.location.pathname.endsWith('/voting_mobile/') ||
+                       window.location.pathname.endsWith('/frontend/');
+
+    // 1. Android native interface (controls status bar and navigation bar icon contrast)
+    if (window.AndroidEdgeToEdge && typeof window.AndroidEdgeToEdge.setSystemBarsAppearance === 'function') {
+        // false = white icons for dark background (login); true = dark icons for light background (inner pages)
+        window.AndroidEdgeToEdge.setSystemBarsAppearance(!isDarkPage, !isDarkPage);
+    }
+
+    // 2. Capacitor StatusBar plugin (draws webview behind status bar and sets icon color)
     if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.StatusBar) {
         const StatusBar = window.Capacitor.Plugins.StatusBar;
-        StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
-        StatusBar.setBackgroundColor({ color: '#0f172a' }).catch(() => {});
-        StatusBar.setStyle({ style: 'DARK' }).catch(() => {});
+        // In edge-to-edge mode, webview overlays behind the status bar
+        StatusBar.setOverlaysWebView({ overlay: true }).catch(() => {});
+        // Transparent background so app content is visible underneath
+        StatusBar.setBackgroundColor({ color: '#00000000' }).catch(() => {});
+        // Style 'DARK' indicates a dark status bar background (so text/icons are light/white)
+        // Style 'LIGHT' indicates a light status bar background (so text/icons are dark)
+        StatusBar.setStyle({ style: isDarkPage ? 'DARK' : 'LIGHT' }).catch(() => {});
     }
 }
+
 initNativeSystemBars();
-document.addEventListener('DOMContentLoaded', initNativeSystemBars);
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initNativeSystemBars);
+    } else {
+        initNativeSystemBars();
+    }
+}
 

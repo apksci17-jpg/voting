@@ -53,30 +53,10 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
-/* Solid dark status bar notch filler for mobile webviews (#0f172a) */
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: env(safe-area-inset-top, 0px);
-    background-color: #0f172a;
-    z-index: 999999;
-    pointer-events: none;
-}
-
-/* Solid dark bottom navigation bar safe area filler for mobile webviews (#0f172a) */
+/* Edge-to-Edge: content draws directly underneath the status and navigation bars */
+body::before,
 body::after {
-    content: '';
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: env(safe-area-inset-bottom, 0px);
-    background-color: #0f172a;
-    z-index: 999999;
-    pointer-events: none;
+    display: none !important;
 }
 
 /* ==========================================================================
@@ -299,10 +279,13 @@ button:active, .btn:active {
     justify-content: center;
     width: 100vw;
     min-height: 100vh;
+    min-height: 100dvh;
     position: relative;
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    padding: calc(24px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(28px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+    box-sizing: border-box;
 }
 
 .login-outer-frame {

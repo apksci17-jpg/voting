@@ -209,6 +209,12 @@ Never authorize actions based on `localStorage` role flags, hidden form inputs, 
 - Native Android `MainActivity.java` and `styles.xml` configure transparent system bars with dark icons matching the slate background.
 - Rubber-band elastic overscroll bouncing must be strictly disabled across all webviews and scrollable viewports using `overscroll-behavior: none !important;` and `View.OVER_SCROLL_NEVER`.
 
+### Rule 6.9 — Native Android Multi-Density Icons & Adaptive Standards
+- The native Android package must provide complete multi-density launcher icons for all standard screen categories (`mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`).
+- **Adaptive Icons (API 26+)**: Configured via `mipmap-anydpi-v26/ic_launcher.xml` and `ic_launcher_round.xml`. Foreground emblem must be scaled within 65% of the 108dp canvas (strictly respecting the 72dp safe zone circle) so no OEM mask (circle, squircle, rounded square) clips the emblem. Background color (`ic_launcher_background`) must match the brand emblem background (`#EDF3FF`).
+- **Legacy Fallback Icons**: Full raster PNG sets for `ic_launcher.png` and `ic_launcher_round.png` must be provided across all mipmap densities (48x48 up to 192x192 px) with clean anti-aliasing and transparent outer corners.
+- **Store Distribution**: A 512x512 px 32-bit PNG (`ic_launcher-playstore.png`) must be maintained in `android/app/src/main/` for Google Play Store packaging.
+
 ---
 
 ## 7. Results & Reporting Rules

@@ -107,6 +107,11 @@ The frontend is specifically structured for direct compilation into native iOS a
 - Top safe-area padding on `.top-header` (`padding-top: calc(14px + env(safe-area-inset-top, 0px))`).
 - Bottom clearance on `.content-body` (`padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)) !important;`) ensuring content, forms, and submit buttons are completely visible and unblocked above the bottom navigation bar.
 - Pre-vote native biometrics using `@capgo/capacitor-native-biometric` (v8.7.0) with biometric availability detection and emerald status shield.
+- Complete native multi-density Android app icon suite generated from `frontend/assets/images/icon.jpg`:
+  - Adaptive foregrounds (`ic_launcher_foreground.png`) across `mdpi` (108x108), `hdpi` (162x162), `xhdpi` (216x216), `xxhdpi` (324x324), and `xxxhdpi` (432x432) fitted strictly within the 72dp safe zone circle.
+  - Legacy standard (`ic_launcher.png`) and round (`ic_launcher_round.png`) sets from 48x48 up to 192x192 px.
+  - Play Store 512x512 px master distribution graphic (`android/app/src/main/ic_launcher-playstore.png`).
+  - Adaptive background color `#EDF3FF` aligned across `values/` and `drawable/`.
 
 ---
 

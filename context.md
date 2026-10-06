@@ -415,6 +415,37 @@ c:/xampp/htdocs/voting/
 
 ---
 
+### L. Native Android App Icon & Multi-Resolution Density Packaging
+- **Stakeholder Directive**: Analyze native side of the Capacitor mobile app, generate app icons with different resolutions and sizes for all Android devices from `frontend/assets/images/icon.jpg`, and modify native codes as required.
+- **Authoritative Vector-Master Emblem Processing**:
+  - Extracted from `frontend/assets/images/icon.jpg` (1018x1018 px circular Tomorrow Vote emblem).
+  - High-precision circular boundary detection and anti-aliased clipping at radius 392px.
+- **Adaptive Icon Implementation (Android 8.0+ / API 26+)**:
+  - `mipmap-anydpi-v26/ic_launcher.xml` and `ic_launcher_round.xml` combining `@color/ic_launcher_background` (`#EDF3FF`) and `@mipmap/ic_launcher_foreground`.
+  - Emblem scaled to 65% of the 108dp canvas, perfectly enclosed within Android's 72dp safe zone circle (guaranteeing zero clipping across Google Pixel circle, Samsung squircle, Xiaomi rounded square, and OnePlus pebble masks).
+  - Multi-density foreground assets generated:
+    - `mipmap-mdpi`: 108 x 108 px
+    - `mipmap-hdpi`: 162 x 162 px
+    - `mipmap-xhdpi`: 216 x 216 px
+    - `mipmap-xxhdpi`: 324 x 324 px
+    - `mipmap-xxxhdpi`: 432 x 432 px
+- **Legacy Standard & Round Launcher Icons (Android 7.1 and below)**:
+  - Generated both standard `ic_launcher.png` and circular `ic_launcher_round.png` across all densities:
+    - `mipmap-mdpi`: 48 x 48 px
+    - `mipmap-hdpi`: 72 x 72 px
+    - `mipmap-xhdpi`: 96 x 96 px
+    - `mipmap-xxhdpi`: 144 x 144 px
+    - `mipmap-xxxhdpi`: 192 x 192 px
+- **Play Store & Web Distribution Assets**:
+  - High-res 512x512 px 32-bit PNG created at `android/app/src/main/ic_launcher-playstore.png` and `frontend/assets/images/icon-512.png`.
+- **Native Android Configuration & Resource Hardening**:
+  - Configured `@color/ic_launcher_background` in `res/values/ic_launcher_background.xml` to match the brand emblem `#EDF3FF`.
+  - Replaced legacy teal grid vector in `res/drawable/ic_launcher_background.xml` with solid `#EDF3FF` vector.
+  - Purged obsolete default Android robot vector in `res/drawable-v24/ic_launcher_foreground.xml`.
+  - Fully verified compilation and AAPT2 packaging via `gradlew.bat assembleDebug` (153 actionable tasks passed).
+
+---
+
 ## 4. Key Operating Principles & Constraints
 1. **Headless Discipline**: PHP files reside strictly in `backend/` and output JSON or PDF documents. All HTML rendering is performed by the `frontend/` static client.
 2. **Capacitor Mobile Ready**: All asset and API paths resolve dynamically. State is managed via `localStorage` and `sessionStorage`.
@@ -423,6 +454,7 @@ c:/xampp/htdocs/voting/
 5. **One Student, One Vote**: Enforced atomically via MySQL transactions and `has_voted` flags.
 6. **E-Statement Security & Confidentiality**: Ballot receipts sent via email must always be password-protected with the student's unique credentials. Voting commitments must never be aborted if an external mail service experiences latency or network timeouts.
 7. **Masterlist Synchronization**: The system automatically aligns the voter database with the authoritative class masterlist on startup and cloud deployment, ensuring all voters have their verified email addresses for 2FA OTP delivery.
+8. **Native Android Multi-Density Icons**: All launcher icons must provide full adaptive (108dp canvas with 72dp safe zone) and legacy (mdpi through xxxhdpi) sets to guarantee pixel-perfect rendering across all Android devices and OEM launchers.
 
 
 

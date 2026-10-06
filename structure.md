@@ -257,3 +257,30 @@ c:/xampp/htdocs/voting/
 - **Diagnostic & Administrative Control**:
   - Admin endpoint `POST /backend/api/admin.php?action=sync_masterlist` allows election officials to manually re-trigger masterlist alignment.
   - Health check endpoint `GET /backend/api/health.php` outputs live metrics: `total_voters`, `voters_with_real_email`, and `masterlist_synced` status.
+
+### 3.9 Native Android App Icon & Multi-Resolution Density Packaging
+- **Authoritative Vector-Master Emblem Source**:
+  - Derived from `frontend/assets/images/icon.jpg` (1018x1018 px, official circular Tomorrow Vote emblem).
+- **Android Adaptive Icons (Android 8.0+ / API 26+)**:
+  - Configured in `android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` and `ic_launcher_round.xml`.
+  - Background: Configured with `@color/ic_launcher_background` set to `#EDF3FF` matching the emblem's outer background.
+  - Foreground: Circular emblem scaled to 65% of the 108dp canvas, guaranteeing 100% adherence to Android's 72dp safe zone circle across all OEM launcher masks (Circle, Squircle, Rounded Square, Pebble, Teardrop).
+  - Densities generated:
+    - `mipmap-mdpi`: 108 x 108 px
+    - `mipmap-hdpi`: 162 x 162 px
+    - `mipmap-xhdpi`: 216 x 216 px
+    - `mipmap-xxhdpi`: 324 x 324 px
+    - `mipmap-xxxhdpi`: 432 x 432 px
+- **Legacy Standard & Round Launcher Icons (Android 7.1 and below)**:
+  - Standard launcher `ic_launcher.png` and round launcher `ic_launcher_round.png` across all densities:
+    - `mipmap-mdpi`: 48 x 48 px
+    - `mipmap-hdpi`: 72 x 72 px
+    - `mipmap-xhdpi`: 96 x 96 px
+    - `mipmap-xxhdpi`: 144 x 144 px
+    - `mipmap-xxxhdpi`: 192 x 192 px
+- **Store & Distribution Artwork**:
+  - High-res 512x512 px PNG generated at `android/app/src/main/ic_launcher-playstore.png` and `frontend/assets/images/icon-512.png`.
+- **Native Resource Hardening**:
+  - Updated `android/app/src/main/res/values/ic_launcher_background.xml` color to `#EDF3FF`.
+  - Replaced legacy teal grid vector in `android/app/src/main/res/drawable/ic_launcher_background.xml` with solid `#EDF3FF` vector.
+  - Removed obsolete default Android robot vector in `android/app/src/main/res/drawable-v24/ic_launcher_foreground.xml`.

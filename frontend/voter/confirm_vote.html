@@ -56,6 +56,33 @@
                 Please enter your voter account password to confirm your identity and cast your ballot.
             </p>
 
+            <!-- Attempts Notice Box -->
+            <div id="attemptsNoticeBox" style="display: none; background: #fffbeb; color: #92400e; padding: 10px 14px; border-radius: 12px; margin-bottom: 16px; font-size: 12px; font-weight: 700; border: 1.5px solid #fcd34d; text-align: left; align-items: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <span id="attemptsNoticeText"></span>
+            </div>
+
+            <!-- Lockout Alert Banner with Countdown Display -->
+            <div id="lockoutBanner" style="display: none; background: #fef2f2; border: 1.5px solid #f87171; border-radius: 16px; padding: 18px 16px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.12);">
+                <div style="width: 44px; height: 44px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px auto;">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                </div>
+                <div style="font-size: 14px; font-weight: 900; color: #991b1b; margin-bottom: 4px;">Account Temporarily Locked</div>
+                <div style="font-size: 12px; color: #7f1d1d; margin-bottom: 12px; line-height: 1.4;">
+                    Too many incorrect password attempts. Please wait for the security timer to expire before re-attempting:
+                </div>
+                <div id="lockoutTimerDisplay" style="font-family: 'Courier New', Courier, monospace; font-size: 32px; font-weight: 900; color: #dc2626; letter-spacing: 3px; background: #ffffff; padding: 8px 16px; border-radius: 12px; border: 1.5px solid #fecaca; display: inline-block; margin-bottom: 10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);">
+                    01:00
+                </div>
+                <div id="lockoutEmailNotice" style="font-size: 11.5px; font-weight: 700; color: #991b1b; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    <span>Security alert email sent to your registered account.</span>
+                </div>
+            </div>
+
             <div id="modalErrorBox" style="display: none; background: #fef2f2; color: #991b1b; padding: 10px 14px; border-radius: 10px; margin-bottom: 16px; font-size: 12px; font-weight: 700; border: 1px solid #fecaca; text-align: left;"></div>
 
             <form id="voterPasswordForm">
@@ -210,17 +237,104 @@
                 togglePwdBtn.innerHTML = isPwd ? eyeOffSvg : eyeSvg;
             });
 
-            function openPasswordModal(customDesc = '') {
+            let isPasswordLocked = false;
+            let lockCountdownInterval = null;
+
+            const attemptsNotice = document.getElementById('attemptsNoticeBox');
+            const attemptsText = document.getElementById('attemptsNoticeText');
+            const lockoutBanner = document.getElementById('lockoutBanner');
+            const timerDisplay = document.getElementById('lockoutTimerDisplay');
+
+            function startLockoutTimer(totalSeconds) {
+                if (lockCountdownInterval) clearInterval(lockCountdownInterval);
+                isPasswordLocked = true;
+                let remaining = Math.max(1, Math.round(totalSeconds));
+
+                if (lockoutBanner) lockoutBanner.style.display = 'block';
+                if (attemptsNotice) attemptsNotice.style.display = 'none';
+                if (modalErr) modalErr.style.display = 'none';
+
+                input.disabled = true;
+                input.style.opacity = '0.6';
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.6';
+
+                function updateDisplay() {
+                    const mins = Math.floor(remaining / 60);
+                    const secs = remaining % 60;
+                    const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                    if (timerDisplay) timerDisplay.innerText = formatted;
+                    submitBtn.innerHTML = `<span>Locked (${formatted})</span>`;
+
+                    if (remaining <= 0) {
+                        clearInterval(lockCountdownInterval);
+                        lockCountdownInterval = null;
+                        isPasswordLocked = false;
+                        if (lockoutBanner) lockoutBanner.style.display = 'none';
+                        input.disabled = false;
+                        input.style.opacity = '1';
+                        submitBtn.disabled = false;
+                        submitBtn.style.opacity = '1';
+                        submitBtn.innerHTML = `
+                            <span>Verify & Cast</span>
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        `;
+                        modalErr.style.display = 'block';
+                        modalErr.style.background = '#ecfdf5';
+                        modalErr.style.color = '#047857';
+                        modalErr.style.borderColor = '#a7f3d0';
+                        modalErr.innerText = 'Lock period has expired. You may now enter your password.';
+                        input.focus();
+                        return;
+                    }
+                    remaining--;
+                }
+
+                updateDisplay();
+                lockCountdownInterval = setInterval(updateDisplay, 1000);
+            }
+
+            function showAttemptsNotice(remaining) {
+                if (!attemptsNotice) return;
+                attemptsNotice.style.display = 'flex';
+                if (remaining === 1) {
+                    attemptsNotice.style.background = '#fef2f2';
+                    attemptsNotice.style.borderColor = '#fca5a5';
+                    attemptsNotice.style.color = '#991b1b';
+                    attemptsText.innerHTML = `<strong>Final Attempt:</strong> 1 attempt remaining before temporary account lock.`;
+                } else {
+                    attemptsNotice.style.background = '#fffbeb';
+                    attemptsNotice.style.borderColor = '#fcd34d';
+                    attemptsNotice.style.color = '#92400e';
+                    attemptsText.innerHTML = `<strong>Security Notice:</strong> ${remaining} attempts remaining before temporary account lock.`;
+                }
+            }
+
+            async function checkVoterLockStatus() {
+                try {
+                    const res = await api.voter.passwordStatus();
+                    if (res && res.is_locked && res.remaining_seconds > 0) {
+                        startLockoutTimer(res.remaining_seconds);
+                    } else if (res && res.failed_attempts > 0 && res.remaining_attempts < 3) {
+                        showAttemptsNotice(res.remaining_attempts);
+                    } else {
+                        if (attemptsNotice) attemptsNotice.style.display = 'none';
+                    }
+                } catch (e) {
+                    console.warn('Unable to verify password lock status:', e);
+                }
+            }
+
+            async function openPasswordModal(customDesc = '') {
                 if (customDesc) descEl.innerText = customDesc;
                 modalErr.style.display = 'none';
                 input.value = '';
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = `
-                    <span>Verify & Cast</span>
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                `;
                 modal.style.display = 'flex';
-                input.focus();
+
+                await checkVoterLockStatus();
+                if (!isPasswordLocked) {
+                    input.focus();
+                }
             }
 
             function closePasswordModal() {
@@ -259,6 +373,11 @@
                         }));
                         window.location.href = 'dashboard.html';
                     } else {
+                        if (res && res.is_locked) {
+                            openPasswordModal('Verification Locked: Maximum password attempts exceeded.');
+                            handlePasswordFailure(res);
+                            return;
+                        }
                         throw new Error(res.error || 'Submission failed');
                     }
                 } catch (err) {
@@ -327,31 +446,61 @@
                 openPasswordModal('Biometric hardware is not configured on this device. Please enter your account password to verify your identity and cast your ballot.');
             });
 
-            // Password modal form submission
-            document.getElementById('voterPasswordForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const password = input.value;
-                modalErr.style.display = 'none';
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span>Verifying Password...</span>';
+            function handlePasswordFailure(res) {
+                const errMsg = res.error || res.message || 'Incorrect password. Verification failed.';
+                modalErr.style.background = '#fef2f2';
+                modalErr.style.color = '#991b1b';
+                modalErr.style.borderColor = '#fca5a5';
+                modalErr.style.display = 'block';
+                modalErr.innerText = errMsg;
 
-                try {
-                    const checkRes = await api.voter.verifyPassword(password);
-                    if (checkRes.success) {
-                        closePasswordModal();
-                        await executeCastVote(password);
-                    } else {
-                        throw new Error(checkRes.error || 'Incorrect password.');
-                    }
-                } catch (err) {
-                    modalErr.style.display = 'block';
-                    modalErr.innerText = err.message || 'Incorrect password. Verification failed.';
+                if (res.is_locked && (res.remaining_seconds || res.remaining_seconds === 0)) {
+                    startLockoutTimer(res.remaining_seconds);
+                } else if (res.remaining_attempts !== undefined) {
+                    showAttemptsNotice(res.remaining_attempts);
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = `
                         <span>Verify & Cast</span>
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     `;
                     input.select();
+                } else {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `
+                        <span>Verify & Cast</span>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    `;
+                    input.select();
+                }
+            }
+
+            // Password modal form submission
+            document.getElementById('voterPasswordForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (isPasswordLocked) return;
+                const password = input.value;
+                if (!password) {
+                    modalErr.style.background = '#fef2f2';
+                    modalErr.style.color = '#991b1b';
+                    modalErr.style.borderColor = '#fca5a5';
+                    modalErr.style.display = 'block';
+                    modalErr.innerText = 'Please enter your account password.';
+                    return;
+                }
+                modalErr.style.display = 'none';
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span>Verifying Password...</span>';
+
+                try {
+                    const checkRes = await api.voter.verifyPassword(password);
+                    if (checkRes && checkRes.success) {
+                        closePasswordModal();
+                        await executeCastVote(password);
+                    } else {
+                        handlePasswordFailure(checkRes || {});
+                    }
+                } catch (err) {
+                    handlePasswordFailure({ error: err.message });
                 }
             });
         })();

@@ -96,6 +96,20 @@ After successful authentication:
   3. The entered password must be verified against `POST /backend/api/voter.php?action=verify_password` and validated atomically during `action=cast_vote`.
 - Web browser environments without native biometric plugins must seamlessly default to the password verification flow.
 
+### Rule 3.6.1 — 3-Attempt Password Limit, Progressive Lockout Escalation & Security Alert Email
+- When authenticating via password verification fallback:
+  1. **Strict 3-Attempts Limit**: Voters are allowed up to 3 incorrect password entries (`users.pwd_failed_attempts`).
+  2. **Temporary Lockout**: Upon the 3rd failed attempt, the account's password verification is locked (`users.pwd_locked_until`).
+  3. **Progressive Lockout Duration Escalation**:
+     - 1st lockout cycle: 60 seconds (1 minute).
+     - 2nd lockout cycle: 120 seconds (2 minutes).
+     - 3rd lockout cycle: 300 seconds (5 minutes).
+     - 4th+ lockout cycles: 600 seconds (10 minutes).
+     - Note: While locked or upon expiry, subsequent incorrect attempts immediately trigger the next escalated lockout cycle.
+  4. **Automated Security Warning Email**: Whenever an account lockout is triggered, an institutional security warning alert is immediately dispatched to the voter's registered email address (`sendPasswordLockoutAlert()`) with lockout duration, incident timestamp, and client IP metadata.
+  5. **Client-Side Live Timer & Input Disablement**: The verification modal disables inputs and shows a live MM:SS countdown timer (`#lockoutTimerDisplay`). Upon expiration, inputs are re-enabled automatically.
+  6. **Lock State Inspection**: `GET /backend/api/voter.php?action=password_status` allows the frontend client to query active lock state and remaining seconds without submitting credentials.
+
 ### Rule 3.7 — Masterlist Voter Synchronization & Initial Credentials
 - The voter registry is grounded in the authoritative institutional class roster (`Masterlist BSIT31008-IS (1).xlsx` / `backend/includes/voter_masterlist.php`).
 - The database connection layer (`backend/config/database.php`) must automatically synchronize masterlist records on boot and connection, ensuring voters possess their verified email addresses for 2FA OTP delivery.

@@ -33,6 +33,9 @@ CREATE TABLE `users` (
   `face_descriptor` LONGTEXT DEFAULT NULL,
   `face_registered` TINYINT(1) DEFAULT 0,
   `has_voted` TINYINT(1) NOT NULL DEFAULT 0,
+  `pwd_failed_attempts` INT NOT NULL DEFAULT 0,
+  `pwd_locked_until` DATETIME DEFAULT NULL,
+  `pwd_lock_count` INT NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

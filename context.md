@@ -511,6 +511,42 @@ c:/xampp/htdocs/voting/
 
 ---
 
+### W. 3-Attempt Password Limit with Progressive Lockout Escalation & Security Alert Email
+- **Stakeholder Directive**: When voters authenticate using their password (e.g., when native biometrics fail, are unavailable, or are bypassed on `confirm_vote.html`), implement a strict 3-attempt limit. After 3 incorrect entries, temporarily lock password verification for ~1 minute (60 seconds). If the voter fails to enter the correct password again once the timer expires, the lock time progressively increases. Additionally, send an automated security alert email notifying the voter that repeated unauthorized unlock attempts were detected.
+- **Database Schema & Automated Auto-Migration (`backend/config/database.php`)**:
+  - Injected non-destructive auto-migrations for the `users` table:
+    - `pwd_failed_attempts` (INT DEFAULT 0): Tracks consecutive incorrect password attempts.
+    - `pwd_locked_until` (DATETIME DEFAULT NULL): Records expiration timestamp for the current lockout period.
+    - `pwd_lock_count` (INT DEFAULT 0): Records total lockout cycles triggered to escalate subsequent lock duration.
+  - Mirrored definitions across all seed SQL schemas (`schema.sql`, `voting_db_import.sql`, `schema_infinityfree.sql`).
+- **Progressive Lockout Duration Escalation Engine (`backend/api/voter.php`)**:
+  - Escalation schedule:
+    - 1st lockout cycle: 60 seconds (1 minute)
+    - 2nd lockout cycle: 120 seconds (2 minutes)
+    - 3rd lockout cycle: 300 seconds (5 minutes)
+    - 4th+ lockout cycles: 600 seconds (10 minutes)
+  - Helper `checkVoterPasswordLockout($user)` evaluates whether `pwd_locked_until` > current server time, returning active lock status and remaining seconds.
+  - Unified helper `verifyVoterPasswordWithLockout($pdo, $user, $password)`:
+    - Rejects active lockouts immediately with HTTP 423 (Locked) and remaining countdown seconds.
+    - Upon correct password match: Resets `pwd_failed_attempts = 0`, `pwd_locked_until = NULL`, and `pwd_lock_count = 0`.
+    - Upon incorrect password:
+      - If `$newAttempts < 3`: Updates `pwd_failed_attempts` and returns HTTP 400 with warning notice and remaining attempts count.
+      - If `$newAttempts >= 3`: Triggers lockout. Computes escalating duration based on `$newLockCount`, writes `pwd_locked_until = NOW() + duration`, updates `pwd_failed_attempts = 3`, dispatches security alert email via `sendPasswordLockoutAlert()`, and returns HTTP 423 with `is_locked: true` and `remaining_seconds`.
+      - Crucial progressive escalation guarantee: Keeping `pwd_failed_attempts = 3` upon lockout guarantees that when the lock expires, a single subsequent wrong password immediately triggers the next lockout tier ($lockCount + 1), progressively increasing lock duration.
+  - Endpoint `GET ?action=password_status`: Exposes current lock state, remaining seconds, failed attempts count, and remaining attempts without requiring password transmission.
+  - Endpoint `POST ?action=cast_vote`: Enforces `checkVoterPasswordLockout()` and validates fallback password using `verifyVoterPasswordWithLockout()`.
+- **Institutional Fraud Prevention Email Dispatch (`backend/includes/mailer.php`)**:
+  - `buildPasswordLockoutEmailHtml()`: Formatted with crimson security alert headers, prominent lockout duration badge, incident metadata table (Timestamp, IP/Device, Trigger Reason), and clear fraud advisory guidance.
+  - `sendPasswordLockoutAlert()`: Dispatches through HTTPS Webhook relay, Brevo API, or multi-port SMTP failover (465 SSL, 587 STARTTLS) without interrupting user verification flow if SMTP experiences latency.
+- **Frontend Real-Time Countdown & Security UI (`frontend/voter/confirm_vote.html`)**:
+  - Dynamic Attempt Notice Banner (`#attemptsNoticeBox`): Displays amber advisory on 2 attempts remaining and high-contrast red warning on final attempt.
+  - High-Security Lockout Banner (`#lockoutBanner`): Displays crimson alert with live digital countdown timer (`#lockoutTimerDisplay`, MM:SS) and email notification notice.
+  - Interactive Lock Controls: Input field and submit button disable and dim to opacity 0.6 while locked, with button text dynamically reflecting `Locked (MM:SS)`.
+  - Automatic Expiration Restoration: When the countdown reaches 00:00, clears interval, re-enables inputs, sets green success prompt, and focuses password field.
+  - Pre-flight lock status check (`checkVoterLockStatus`): Queries `api.voter.passwordStatus()` whenever modal is opened to maintain persistent countdown state even if page is refreshed.
+
+---
+
 ## 4. Key Operating Principles & Constraints
 1. **Headless Discipline**: PHP files reside strictly in `backend/` and output JSON or PDF documents. All HTML rendering is performed by the `frontend/` static client.
 2. **Capacitor Mobile Ready**: All asset and API paths resolve dynamically. State is managed via `localStorage` and `sessionStorage`.

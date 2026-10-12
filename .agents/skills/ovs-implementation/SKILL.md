@@ -47,8 +47,9 @@ The system is architected as a **headless, decoupled system**:
 ### 2.2 Voter Subsystem (`backend/api/voter.php`)
 - `GET ?action=dashboard`: Returns voter status, full name, election status (`OPEN`/`CLOSED`), and `has_voted` flag.
 - `GET ?action=candidates`: Returns all candidates grouped by positions in display order.
-- `POST ?action=verify_password`: Securely validates voter's password prior to casting ballot when biometrics are unavailable or bypassed. Supports dual password authentication (bcrypt hash or raw student ID fallback).
-- `POST ?action=cast`: Commits voter choices. Optionally validates password (with dual-credential fallback). Encrypts payload with AES-256-CBC, inserts into `votes`, and sets `has_voted = 1` inside an atomic transaction. Triggers `generateProtectedBallotReceiptPdf()` and dispatches password-protected e-Statement email via PHPMailer.
+- `POST ?action=verify_password`: Securely validates voter's password prior to casting ballot when biometrics are unavailable or bypassed. Supports dual password authentication (bcrypt hash or raw student ID fallback). Enforces strict 3-attempt limit; upon 3 failures, triggers progressive lockout (60s -> 120s -> 300s -> 600s), dispatches security alert email (`sendPasswordLockoutAlert`), and returns HTTP 423 with remaining seconds.
+- `GET ?action=password_status`: Returns current lock state (`is_locked`), remaining countdown seconds (`remaining_seconds`), failed attempts, and remaining attempts.
+- `POST ?action=cast_vote`: Commits voter choices. Enforces account lockout checks and validates fallback password with progressive lockout safeguards. Encrypts payload with AES-256-CBC, inserts into `votes`, and sets `has_voted = 1` inside an atomic transaction. Triggers `generateProtectedBallotReceiptPdf()` and dispatches password-protected e-Statement email via PHPMailer.
 - `GET ?action=download_receipt`: Streams the voter's password-protected e-Statement PDF receipt (`eStatement_Ballot_[student_id].pdf`) directly to the client browser or Capacitor app.
 - `GET ?action=profile`: Returns student identity info (student ID, email, full name, birthdate).
 - `POST ?action=update_profile`: Updates voter's editable full name.

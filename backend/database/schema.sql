@@ -29,6 +29,9 @@ CREATE TABLE `users` (
   `session_token` VARCHAR(255) DEFAULT NULL,
   `login_otp` VARCHAR(10) DEFAULT NULL,
   `login_otp_expires_at` DATETIME DEFAULT NULL,
+  `pwd_failed_attempts` INT NOT NULL DEFAULT 0,
+  `pwd_locked_until` DATETIME DEFAULT NULL,
+  `pwd_lock_count` INT NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

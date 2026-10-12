@@ -127,6 +127,15 @@ function getDBConnection() {
                 if ($colCheck && $colCheck->rowCount() === 0) {
                     $pdo->exec("ALTER TABLE users ADD COLUMN `login_otp` VARCHAR(10) DEFAULT NULL, ADD COLUMN `login_otp_expires_at` DATETIME DEFAULT NULL");
                 }
+
+                // Ensure password attempt and lockout columns exist in users table
+                $pwdLockCheck = $pdo->query("SHOW COLUMNS FROM users LIKE 'pwd_failed_attempts'");
+                if ($pwdLockCheck && $pwdLockCheck->rowCount() === 0) {
+                    $pdo->exec("ALTER TABLE users 
+                        ADD COLUMN `pwd_failed_attempts` INT NOT NULL DEFAULT 0,
+                        ADD COLUMN `pwd_locked_until` DATETIME DEFAULT NULL,
+                        ADD COLUMN `pwd_lock_count` INT NOT NULL DEFAULT 0");
+                }
             }
 
             // Ensure phone column is dropped from users table if present

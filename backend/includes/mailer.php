@@ -258,7 +258,9 @@ function sendViaSmtp($recipientEmail, $recipientName, $subject, $htmlBody, $otpC
             $mail->isHTML(true);
             $mail->Subject = $subject;
             $mail->Body = $htmlBody;
-            $mail->AltBody = "Hello {$recipientName},\n\nYour Tomorrow Vote login verification code is: {$otpCode}\n\nThis code will expire in 10 minutes.\nIf you did not request this code, please contact your election administrator.";
+            $mail->AltBody = !empty($otpCode) 
+                ? "Hello {$recipientName},\n\nYour Tomorrow Vote verification code is: {$otpCode}\n\nThis code will expire in 10 minutes.\nIf you did not request this code, please contact your election administrator."
+                : strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>', '</div>'], "\n", $htmlBody));
 
             $mail->send();
             return true;
@@ -328,6 +330,112 @@ function sendAdminLoginOtp($recipientEmail, $recipientName, $otpCode) {
 
     // 3. Fall back to standard SMTP (Port 465 SSL, then Port 587 STARTTLS)
     return sendViaSmtp($recipientEmail, $recipientName, $subject, $htmlBody, $otpCode);
+}
+
+/**
+ * Builds HTML email body for Voter Account Password Lockout Security Alert.
+ */
+function buildPasswordLockoutEmailHtml($recipientName, $lockoutMinutes, $incidentTime, $ipAddress = '') {
+    $escapedName = htmlspecialchars($recipientName, ENT_QUOTES, 'UTF-8');
+    $escapedMinutes = htmlspecialchars((string)$lockoutMinutes, ENT_QUOTES, 'UTF-8');
+    $escapedTime = htmlspecialchars($incidentTime, ENT_QUOTES, 'UTF-8');
+    $escapedIp = htmlspecialchars(!empty($ipAddress) ? $ipAddress : 'Recorded Device', ENT_QUOTES, 'UTF-8');
+
+    return "
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset='UTF-8'>
+        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+        <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; margin: 0; padding: 0; }
+            .email-wrapper { max-width: 580px; margin: 30px auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15); }
+            .email-header { background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%); padding: 34px 26px; text-align: center; color: #ffffff; border-bottom: 3px solid #f87171; }
+            .alert-badge { display: inline-block; background: rgba(254, 202, 202, 0.25); border: 1px solid #fca5a5; color: #fee2e2; padding: 4px 14px; border-radius: 99px; font-size: 11px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 12px; }
+            .email-header h1 { margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.4px; }
+            .email-header p { margin: 6px 0 0 0; font-size: 13px; color: #fecaca; font-weight: 500; }
+            .email-body { padding: 32px 28px; color: #1e293b; line-height: 1.6; }
+            .greeting { font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 12px; }
+            .text { font-size: 14px; color: #475569; margin-bottom: 22px; }
+            .lock-box { background: #fef2f2; border: 2px dashed #ef4444; border-radius: 14px; padding: 22px; margin-bottom: 24px; text-align: center; }
+            .lock-icon-text { font-size: 13px; font-weight: 800; color: #991b1b; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+            .lock-duration { font-size: 32px; font-weight: 900; color: #b91c1c; letter-spacing: -0.5px; }
+            .lock-hint { font-size: 12px; font-weight: 600; color: #7f1d1d; margin-top: 6px; }
+            .incident-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; background: #f8fafc; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; }
+            .incident-table td { padding: 10px 14px; font-size: 12.5px; border-bottom: 1px solid #e2e8f0; }
+            .incident-table tr:last-child td { border-bottom: none; }
+            .incident-label { font-weight: 700; color: #64748b; width: 35%; }
+            .incident-val { font-weight: 800; color: #0f172a; }
+            .warning-box { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 14px 18px; border-radius: 6px; font-size: 12.5px; color: #78350f; margin-bottom: 24px; line-height: 1.5; }
+            .email-footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px 28px; text-align: center; font-size: 11.5px; color: #94a3b8; }
+        </style>
+    </head>
+    <body>
+        <div class='email-wrapper'>
+            <div class='email-header'>
+                <div class='alert-badge'>Security Alert • Account Lockout</div>
+                <h1>Tomorrow Vote Security Alert</h1>
+                <p>Institutional Commission on Elections • Voter Fraud Prevention</p>
+            </div>
+            <div class='email-body'>
+                <div class='greeting'>Dear {$escapedName},</div>
+                <div class='text'>
+                    This is an automated security alert to inform you that <strong>multiple consecutive incorrect password attempts</strong> were made while attempting to verify and cast a ballot on your Tomorrow Vote voter account.
+                </div>
+                <div class='lock-box'>
+                    <div class='lock-icon-text'>Temporary Security Lock Activated</div>
+                    <div class='lock-duration'>{$escapedMinutes} Minute(s)</div>
+                    <div class='lock-hint'>Password verification is locked. Any further failed attempts will result in increased lock duration.</div>
+                </div>
+                <table class='incident-table'>
+                    <tr>
+                        <td class='incident-label'>Incident Time:</td>
+                        <td class='incident-val'>{$escapedTime}</td>
+                    </tr>
+                    <tr>
+                        <td class='incident-label'>Originating IP / Device:</td>
+                        <td class='incident-val'>{$escapedIp}</td>
+                    </tr>
+                    <tr>
+                        <td class='incident-label'>Trigger:</td>
+                        <td class='incident-val'>3+ Failed Password Verifications</td>
+                    </tr>
+                </table>
+                <div class='warning-box'>
+                    <strong>Critical Security Notice:</strong><br>
+                    • <strong>Was this you?</strong> If you forgot your password, please wait until the lock timer expires before trying again, or use your default student credentials.<br>
+                    • <strong>Was this NOT you?</strong> Someone may be attempting to guess your password and vote using your student identity. Please report this immediately to your election administrator or student council board.
+                </div>
+            </div>
+            <div class='email-footer'>
+                &copy; 2026 Tomorrow Vote Institutional Commission on Elections. All rights reserved.
+            </div>
+        </div>
+    </body>
+    </html>
+    ";
+}
+
+/**
+ * Dispatches Voter Account Password Lockout Security Alert Email.
+ * Tries HTTPS Webhook / Brevo first if configured, then falls back to direct SMTP.
+ */
+function sendPasswordLockoutAlert($recipientEmail, $recipientName, $lockoutMinutes, $incidentTime, $ipAddress = '') {
+    $subject = "[Security Alert] Multiple Failed Password Attempts - Voter Account Temporarily Locked";
+    $htmlBody = buildPasswordLockoutEmailHtml($recipientName, $lockoutMinutes, $incidentTime, $ipAddress);
+
+    // 1. If HTTPS Webhook URL is defined
+    if (!empty(MAIL_WEBHOOK_URL)) {
+        return sendViaHttpsWebhook(MAIL_WEBHOOK_URL, $recipientEmail, $recipientName, $subject, $htmlBody, '');
+    }
+
+    // 2. If Brevo HTTPS API key is defined
+    if (!empty(BREVO_API_KEY)) {
+        return sendViaBrevo(BREVO_API_KEY, $recipientEmail, $recipientName, $subject, $htmlBody);
+    }
+
+    // 3. Fall back to standard SMTP (Port 465 SSL, then Port 587 STARTTLS)
+    return sendViaSmtp($recipientEmail, $recipientName, $subject, $htmlBody, '');
 }
 
 /**

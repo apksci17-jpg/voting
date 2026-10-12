@@ -37,7 +37,7 @@ c:/xampp/htdocs/voting/
 │   │   ├── admin.php               # Admin endpoints (/dashboard, /control, /results, /candidates, /voters)
 │   │   ├── auth.php                # Authentication (/login, /verify_otp, /resend_otp, /logout, /me)
 │   │   ├── health.php              # Cloud health check & deployment diagnostic endpoint
-│   │   └── voter.php               # Voter endpoints (/dashboard, /candidates, /verify_password, /cast, /download_receipt, /profile)
+│   │   └── voter.php               # Voter endpoints (/dashboard, /candidates, /verify_password, /password_status, /cast, /download_receipt, /profile)
 │   │
 │   ├── config/                     # Configuration & Infrastructure
 │   │   ├── cors.php                # Cross-Origin Resource Sharing (CORS) headers & JSON error handling
@@ -134,6 +134,11 @@ c:/xampp/htdocs/voting/
   - An emerald "Biometric Authentication Enabled" shield badge displays when biometric hardware is enrolled and active.
   - If biometric hardware is unavailable, not enrolled, cancelled, or fails, the voter is presented with a secure in-app Password Verification Modal.
   - The password is validated via `POST /backend/api/voter.php?action=verify_password` and verified again atomically during `action=cast_vote`.
+- **3-Attempt Password Limit with Progressive Lockout Escalation**:
+  - To prevent brute-force attacks and unauthorized ballot submissions, password verification enforces a strict 3-attempt limit.
+  - After 3 incorrect entries, the account is temporarily locked with escalating lockout duration (1st: 60s, 2nd: 120s, 3rd: 300s, 4th+: 600s).
+  - An automated security alert email is immediately dispatched to the voter's registered email (`sendPasswordLockoutAlert()`) warning of unauthorized unlock attempts.
+  - An interactive modal banner with a live MM:SS countdown timer disables the input and verify button until the lockout duration expires, and auto-restores access upon completion.
 - **CORS Handling**: `backend/config/cors.php` handles preflight `OPTIONS` requests and sets permissive headers, enabling Capacitor mobile apps (`capacitor://localhost`) or remote frontends to communicate seamlessly with the backend.
 
 ### 3.2 UI Design System, Typography & Animations

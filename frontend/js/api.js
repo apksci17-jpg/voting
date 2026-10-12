@@ -136,6 +136,7 @@ const api = {
         candidates: () => api.get('voter.php?action=candidates'),
         castVote: (votes, password = '') => api.post('voter.php?action=cast_vote', { votes, password }),
         verifyPassword: (password) => api.post('voter.php?action=verify_password', { password }),
+        passwordStatus: () => api.get('voter.php?action=password_status'),
         profile: () => api.get('voter.php?action=profile'),
         updateProfile: (full_name) => api.post('voter.php?action=update_profile', { full_name }),
         getReceiptDownloadUrl: () => `${API_BASE}/voter.php?action=download_receipt&token=${encodeURIComponent(api.getToken() || '')}`

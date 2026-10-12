@@ -487,20 +487,26 @@ c:/xampp/htdocs/voting/
 - **Administrative Email Dispatch & High-Privilege Template (`backend/includes/mailer.php`)**:
   - Implemented `sendAdminLoginOtp($recipientEmail, $recipientName, $otpCode)` routing through HTTPS Webhook relay, Brevo REST API, or multi-port SMTP failover.
   - Designed `buildAdminOtpEmailHtml()` featuring navy/gold administrative security branding, high-visibility 40px monospace authorization code, and critical tamper warnings.
-- **Administrator Email Configuration & Automatic Synchronization (`backend/config/database.php`)**:
-  - Configured the default administrator email to `cassandramherranola@gmail.com` across database seed files (`schema.sql`, `voting_db_import.sql`, `setup.php`, `voting_db.sql`) and injected automatic database synchronization:
+- **Default Administrator Email & Automated Synchronization (`cassandramherranola@gmail.com`)**:
+  - Designated `cassandramherranola@gmail.com` as the authoritative default administrator email for receiving 2FA OTP security codes, matching the authenticated sending account in `backend/config/mail.php`.
+  - **Connection-Level Database Synchronization (`backend/config/database.php`)**:
     ```php
-    $targetAdminEmail = 'cassandramherranola@gmail.com';
-    $adminEnvEmail = getenv('ADMIN_EMAIL') ?: ($_ENV['ADMIN_EMAIL'] ?? null);
-    if ($adminEnvEmail && filter_var(trim($adminEnvEmail), FILTER_VALIDATE_EMAIL)) {
-        $targetAdminEmail = trim($adminEnvEmail);
+    $adminTargetEmail = getenv('ADMIN_EMAIL') ?: ($_ENV['ADMIN_EMAIL'] ?? 'cassandramherranola@gmail.com');
+    if (!empty($adminTargetEmail) && filter_var($adminTargetEmail, FILTER_VALIDATE_EMAIL)) {
+        $pdo->prepare("UPDATE users SET email = ? WHERE role = 'admin' AND email != ?")->execute([$adminTargetEmail, $adminTargetEmail]);
     }
-    $pdo->prepare("UPDATE users SET email = ? WHERE (role = 'admin' OR username = 'admin') AND email != ?")->execute([$targetAdminEmail, $targetAdminEmail]);
     ```
-  - Dropped unique constraints on the `email` column in `users` to permit shared institutional contacts (such as an administrator holding both an administrative identity and a student voter profile) without SQL collision, and updated `backend/api/auth.php` with password-based credential disambiguation.
-  - Automatically aligns the database email on container startup and requests across Railway and local instances.
+    Guarantees that cloud databases (e.g. on Railway) and local databases automatically migrate and preserve `cassandramherranola@gmail.com` as the admin's email on every connection lifecycle.
+  - **Login-Time Verification & Alternate Identifier Lookup (`backend/api/auth.php`)**:
+    - The admin can sign in using either username (`admin`) or email (`cassandramherranola@gmail.com`).
+    - During both `action=login` and `action=resend_otp`, the system verifies and updates `$user['email'] = 'cassandramherranola@gmail.com'` immediately prior to dispatching the OTP.
+  - **Fallback Safeguard in Mailer (`backend/includes/mailer.php`)**:
+    - In `sendAdminLoginOtp()`, if `$recipientEmail` is empty or the legacy placeholder `admin@tomorrowvote.com`, it automatically falls back to `cassandramherranola@gmail.com`.
+  - **Database Schemas & Seed SQL Dumps (`backend/database/`)**:
+    - Updated initial administrator records across `schema.sql`, `voting_db_import.sql`, `schema_infinityfree.sql`, `setup.php`, and `voting_db.sql` to initialize `cassandramherranola@gmail.com`.
 - **Frontend Adaptive Modal UI & Navigation (`frontend/login.html`)**:
   - Dynamically switches header title ("Administrator 2FA Security Authorization"), banner text, and button label ("Authorize & Enter Console") when an administrative login is in progress.
+  - Displays masked email `c****a@gmail.com` on the modal prompt.
   - Corrected post-verification redirection: redirects administrators to `admin/dashboard.html` and voters to `voter/dashboard.html`.
 
 ---

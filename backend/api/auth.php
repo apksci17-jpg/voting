@@ -37,28 +37,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'login') {
         exit;
     }
 
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? OR student_id = ? OR email = ? ORDER BY (role = 'admin') DESC, id ASC");
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? OR student_id = ? OR email = ? LIMIT 1");
     $stmt->execute([$username, $username, $username]);
-    $candidates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $user = null;
-    $isPasswordValid = false;
-    foreach ($candidates as $cand) {
-        if (password_verify($password, $cand['password_hash'])) {
-            $user = $cand;
-            $isPasswordValid = true;
-            break;
-        } elseif (!empty($cand['student_id']) && $password === $cand['student_id']) {
-            $user = $cand;
-            $isPasswordValid = true;
-            break;
-        }
+    // If not found and input matches admin email, find admin user directly
+    if (!$user && (strcasecmp($username, 'cassandramherranola@gmail.com') === 0 || strcasecmp($username, 'admin@tomorrowvote.com') === 0)) {
+        $adminStmt = $pdo->prepare("SELECT * FROM users WHERE role = 'admin' LIMIT 1");
+        $adminStmt->execute();
+        $user = $adminStmt->fetch(PDO::FETCH_ASSOC);
     }
-    if (!$user && !empty($candidates)) {
-        $user = $candidates[0];
+
+    $isPasswordValid = false;
+    if ($user) {
+        if (password_verify($password, $user['password_hash'])) {
+            $isPasswordValid = true;
+        } elseif (!empty($user['student_id']) && $password === $user['student_id']) {
+            $isPasswordValid = true;
+        }
     }
 
     if ($user && $isPasswordValid) {
+        // Ensure admin account always targets cassandramherranola@gmail.com (or ADMIN_EMAIL env)
+        if ($user['role'] === 'admin') {
+            $adminTargetEmail = getenv('ADMIN_EMAIL') ?: ($_ENV['ADMIN_EMAIL'] ?? 'cassandramherranola@gmail.com');
+            $adminTargetEmail = trim($adminTargetEmail);
+            if (!empty($adminTargetEmail) && filter_var($adminTargetEmail, FILTER_VALIDATE_EMAIL)) {
+                if ($user['email'] !== $adminTargetEmail) {
+                    try {
+                        $updateAdminEmail = $pdo->prepare("UPDATE users SET email = ? WHERE id = ?");
+                        $updateAdminEmail->execute([$adminTargetEmail, $user['id']]);
+                        $user['email'] = $adminTargetEmail;
+                    } catch (Exception $e) {
+                        $user['email'] = $adminTargetEmail;
+                    }
+                }
+            }
+        }
+
         if (empty($user['email'])) {
             http_response_code(400);
             echo json_encode([
@@ -211,6 +227,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'resend_otp') {
 
     $mailDelivered = false;
     $mailError = null;
+
+    if ($user['role'] === 'admin') {
+        $adminTargetEmail = getenv('ADMIN_EMAIL') ?: ($_ENV['ADMIN_EMAIL'] ?? 'cassandramherranola@gmail.com');
+        $adminTargetEmail = trim($adminTargetEmail);
+        if (!empty($adminTargetEmail) && filter_var($adminTargetEmail, FILTER_VALIDATE_EMAIL)) {
+            if ($user['email'] !== $adminTargetEmail) {
+                try {
+                    $updateAdminEmail = $pdo->prepare("UPDATE users SET email = ? WHERE id = ?");
+                    $updateAdminEmail->execute([$adminTargetEmail, $user['id']]);
+                    $user['email'] = $adminTargetEmail;
+                } catch (Exception $e) {
+                    $user['email'] = $adminTargetEmail;
+                }
+            }
+        }
+    }
 
     try {
         if ($user['role'] === 'admin') {

@@ -59,7 +59,7 @@ function autoSyncMasterlistVoters($pdo) {
         $masterlist = require $masterlistFile;
         if (!is_array($masterlist) || empty($masterlist)) return;
 
-        $findStmt = $pdo->prepare("SELECT id, username, student_id, email, full_name FROM users WHERE (student_id = ? OR email = ?) AND role = 'voter' LIMIT 1");
+        $findStmt = $pdo->prepare("SELECT id, username, student_id, email, full_name FROM users WHERE student_id = ? OR email = ? LIMIT 1");
         $updateEmailStmt = $pdo->prepare("UPDATE users SET email = ?, full_name = ? WHERE id = ?");
         $insertStmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role, full_name, student_id, has_voted, date_of_birth, grade_level, section) VALUES (?, ?, ?, 'voter', ?, ?, 0, ?, ?, ?)");
 
@@ -139,27 +139,13 @@ function getDBConnection() {
                 // Ignore if already dropped or restricted
             }
 
-            // Ensure email column does not enforce strict uniqueness across distinct roles (e.g. admin & student account)
+            // Sync admin email to cassandramherranola@gmail.com (or ADMIN_EMAIL environment variable if defined)
             try {
-                $idxCheck = $pdo->query("SHOW INDEX FROM users WHERE Column_name = 'email' AND Non_unique = 0");
-                if ($idxCheck && $idxCheck->rowCount() > 0) {
-                    while ($idx = $idxCheck->fetch(PDO::FETCH_ASSOC)) {
-                        $kName = $idx['Key_name'] ?? 'email';
-                        $pdo->exec("ALTER TABLE users DROP INDEX `" . $kName . "`");
-                    }
+                $adminTargetEmail = getenv('ADMIN_EMAIL') ?: ($_ENV['ADMIN_EMAIL'] ?? 'cassandramherranola@gmail.com');
+                $adminTargetEmail = trim($adminTargetEmail);
+                if (!empty($adminTargetEmail) && filter_var($adminTargetEmail, FILTER_VALIDATE_EMAIL)) {
+                    $pdo->prepare("UPDATE users SET email = ? WHERE role = 'admin' AND email != ?")->execute([$adminTargetEmail, $adminTargetEmail]);
                 }
-            } catch (Exception $dropUniqueEx) {
-                // Ignore if already dropped or restricted
-            }
-
-            // Ensure admin email is updated to cassandramherranola@gmail.com (or overridden by ADMIN_EMAIL environment variable)
-            try {
-                $targetAdminEmail = 'cassandramherranola@gmail.com';
-                $adminEnvEmail = getenv('ADMIN_EMAIL') ?: ($_ENV['ADMIN_EMAIL'] ?? null);
-                if ($adminEnvEmail && filter_var(trim($adminEnvEmail), FILTER_VALIDATE_EMAIL)) {
-                    $targetAdminEmail = trim($adminEnvEmail);
-                }
-                $pdo->prepare("UPDATE users SET email = ? WHERE (role = 'admin' OR username = 'admin') AND email != ?")->execute([$targetAdminEmail, $targetAdminEmail]);
             } catch (Exception $adminEmailEx) {
                 // Ignore if restricted
             }

@@ -310,6 +310,9 @@ function sendVoterLoginOtp($recipientEmail, $recipientName, $otpCode) {
  * @throws Exception
  */
 function sendAdminLoginOtp($recipientEmail, $recipientName, $otpCode) {
+    if (empty($recipientEmail) || $recipientEmail === 'admin@tomorrowvote.com') {
+        $recipientEmail = getenv('ADMIN_EMAIL') ?: ($_ENV['ADMIN_EMAIL'] ?? 'cassandramherranola@gmail.com');
+    }
     $subject = "[Security Alert] {$otpCode} is your Tomorrow Vote Administrator 2FA code";
     $htmlBody = buildAdminOtpEmailHtml($recipientName, $otpCode);
 

@@ -68,7 +68,7 @@ If the existing code already implements a rule, preserve it unless the user expl
 - Mandatory Two-Factor (2FA) Email OTP verification is enforced for **both Voter and Administrator accounts**:
   - The server generates a 6-digit numeric OTP (`random_int(100000, 999999)`), records it in `users.login_otp`, and sets a 10-minute expiration timestamp in `users.login_otp_expires_at`.
   - For voters, the code is dispatched via `sendVoterLoginOtp()` with voter portal branding.
-  - For administrators, the code is dispatched via `sendAdminLoginOtp()` with high-priority security alert headers and institutional administrator branding.
+  - For administrators, the code is dispatched via `sendAdminLoginOtp()` to `cassandramherranola@gmail.com` (or `ADMIN_EMAIL` environment variable if specified) with high-priority security alert headers and institutional administrator branding.
   - Multi-port SMTP failover (465 SSL, 587 TLS) and HTTPS relay options (Google Apps Script Webhook, Brevo API) are utilized for reliable delivery.
   - In cloud sandboxes where outbound ports are firewalled, `dev_otp` and non-blocking notifications prevent lockout.
   - The Bearer session token is issued ONLY after successful verification via `POST /backend/api/auth.php?action=verify_otp`.

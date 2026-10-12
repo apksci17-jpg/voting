@@ -150,7 +150,7 @@
                         </svg>
                     </div>
                     <div>
-                        <div style="font-size: 13px; font-weight: 800; color: #1e3a8a;">Code Sent to Email</div>
+                        <div id="otpHeaderTitle" style="font-size: 13px; font-weight: 800; color: #1e3a8a;">Code Sent to Email</div>
                         <div style="font-size: 12px; color: #3b82f6; margin-top: 2px; word-break: break-all;">
                             We sent a 6-digit code to <strong id="otpMaskedEmail" style="color: #1e40af;"></strong>
                         </div>
@@ -193,7 +193,7 @@
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
-                    <span>Verify & Sign In</span>
+                    <span id="otpVerifyBtnText">Verify & Sign In</span>
                 </button>
 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; font-size: 13px;">
@@ -231,6 +231,7 @@
         });
 
         let activeOtpUserId = null;
+        let activeUserRole = 'voter';
         let countdownInterval = null;
         let resendCooldownInterval = null;
         let resendCooldownSecs = 0;
@@ -279,12 +280,28 @@
             resendCooldownInterval = setInterval(update, 1000);
         }
 
-        function showOtpStep(otpUserId, maskedEmail, devOtp = '', cloudNotice = '') {
+        function showOtpStep(otpUserId, maskedEmail, devOtp = '', cloudNotice = '', role = 'voter') {
             activeOtpUserId = otpUserId;
+            activeUserRole = role;
             document.getElementById('loginForm').style.display = 'none';
             document.getElementById('otpForm').style.display = 'block';
             document.getElementById('otpMaskedEmail').innerText = maskedEmail;
-            document.getElementById('pageSubtitle').innerText = 'Two-Factor Email Verification';
+
+            const isRoleAdmin = (role === 'admin');
+            document.getElementById('pageSubtitle').innerText = isRoleAdmin 
+                ? 'Administrator 2FA Security Authorization' 
+                : 'Two-Factor Email Verification';
+
+            const headerTitle = document.getElementById('otpHeaderTitle');
+            if (headerTitle) {
+                headerTitle.innerText = isRoleAdmin ? 'Administrator 2FA Code' : 'Code Sent to Email';
+            }
+
+            const btnText = document.getElementById('otpVerifyBtnText');
+            if (btnText) {
+                btnText.innerText = isRoleAdmin ? 'Authorize & Enter Console' : 'Verify & Sign In';
+            }
+
             document.getElementById('errorBox').style.display = 'none';
 
             const noticeBox = document.getElementById('otpNoticeBox');
@@ -309,6 +326,7 @@
             clearInterval(countdownInterval);
             clearInterval(resendCooldownInterval);
             activeOtpUserId = null;
+            activeUserRole = 'voter';
             document.getElementById('otpForm').style.display = 'none';
             document.getElementById('loginForm').style.display = 'block';
             document.getElementById('pageSubtitle').innerText = 'For the voters, use your school account';
@@ -345,18 +363,18 @@
             try {
                 const res = await api.auth.login(username, password);
 
-                // If voter requires 2FA OTP verification:
+                // If account requires 2FA OTP verification (voter or admin):
                 if (res.success && res.requires_otp) {
-                    showOtpStep(res.otp_user_id, res.masked_email, res.dev_otp || '', res.cloud_notice || '');
+                    showOtpStep(res.otp_user_id, res.masked_email, res.dev_otp || '', res.cloud_notice || '', res.role || 'voter');
                     return;
                 }
 
-                // If admin or direct login:
+                // If direct login fallback:
                 if (res.success && res.token) {
                     api.setToken(res.token);
                     submitBtn.innerHTML = '<span>Login Successful! Redirecting...</span>';
                     
-                    if (res.user.role === 'admin') {
+                    if (res.user && res.user.role === 'admin') {
                         window.location.href = 'admin/dashboard.html';
                     } else {
                         window.location.href = 'voter/dashboard.html';
@@ -404,7 +422,12 @@
                 if (res.success && res.token) {
                     api.setToken(res.token);
                     verifyBtn.innerHTML = '<span>Verified! Redirecting...</span>';
-                    window.location.href = 'voter/dashboard.html';
+                    
+                    if (res.user && res.user.role === 'admin') {
+                        window.location.href = 'admin/dashboard.html';
+                    } else {
+                        window.location.href = 'voter/dashboard.html';
+                    }
                 } else {
                     throw new Error(res.error || 'Invalid verification code');
                 }
@@ -417,7 +440,7 @@
                     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
-                    <span>Verify & Continue</span>
+                    <span>${activeUserRole === 'admin' ? 'Authorize & Enter Console' : 'Verify & Continue'}</span>
                 `;
                 document.getElementById('otpCode').select();
             }

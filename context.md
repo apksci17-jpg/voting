@@ -9,9 +9,9 @@ This document maintains a comprehensive record of all changes, features, archite
 - **Architecture Model**: **Decoupled Headless System** (Stateless PHP REST API + Static Frontend Client)
 - **Target Environments**: Standard Web Browsers & Native Mobile App compilation via **Capacitor** (iOS & Android)
 - **Database Engine**: MySQL (`voting_db` via PDO)
-- **Authentication**: Stateless Bearer Token (`Authorization: Bearer <token>`) persisted in `localStorage` (`voter_token`) + 2FA Email OTP for voters
+- **Authentication**: Stateless Bearer Token (`Authorization: Bearer <token>`) persisted in `localStorage` (`voter_token`) + Universal 2FA Email OTP for both voters and administrators
 - **Default Credentials**:
-  - Admin: `admin` / `admin123`
+  - Admin: `admin` / `admin123` (followed by 6-digit email OTP)
   - Voters: `Moises240104785`, `Jose240114524`, etc. (FirstName + StudentNumber)
 - **Global Timezone**: `Asia/Manila` (Philippine Standard Time, UTC+8) globally set in PHP runtime (`date_default_timezone_set('Asia/Manila')`) and MySQL session (`SET time_zone = '+08:00'`)
 - **Iconography Standard**: 100% Inline Vector SVG Icons (all legacy emoji characters eradicated)
@@ -474,6 +474,31 @@ c:/xampp/htdocs/voting/
   - Stripped all 53 occurrences of `'phone' => '+63 912 345 6789'` across all student entries.
 - **Database Schemas & Seed SQL Dumps (`backend/database/`)**:
   - Purged `phone` column definition and values from `schema.sql`, `voting_db_import.sql`, and `schema_infinityfree.sql`.
+
+---
+
+### V. Administrator Two-Factor Authentication (2FA Email OTP)
+- **Stakeholder Directive**: Implement a mandatory 2FA email OTP verification security layer for the administrative account, mirroring the voter 2FA mechanism while elevating security messaging and privilege safeguards.
+- **Backend Authentication REST API Overhaul (`backend/api/auth.php`)**:
+  - **Login Endpoint (`action=login`)**: Eradicated the legacy administrative bypass. Upon password validation (`admin123`), the endpoint generates a secure 6-digit numeric OTP, records `login_otp` with a 10-minute expiry timestamp in `users`, and dispatches the code to the administrator's email via `sendAdminLoginOtp()`. Returns `requires_otp: true`, `role: 'admin'`, and masked email address.
+  - **Firewall Egress Resilience**: If hosting firewalls block outbound SMTP ports (Error 110), the endpoint attaches `dev_otp` and `cloud_notice`, guaranteeing administrators are never locked out of live testing or elections.
+  - **Universal Verification (`action=verify_otp`)**: Generalized the verification query from `WHERE id = ? AND role = 'voter'` to `WHERE id = ?`. Upon valid OTP match, invalidates the one-time code, generates an authoritative 64-character Bearer `session_token`, and returns the administrative payload.
+  - **Universal Resend (`action=resend_otp`)**: Expanded resend handling to support both roles with fresh OTP generation and role-specific email dispatch.
+- **Administrative Email Dispatch & High-Privilege Template (`backend/includes/mailer.php`)**:
+  - Implemented `sendAdminLoginOtp($recipientEmail, $recipientName, $otpCode)` routing through HTTPS Webhook relay, Brevo REST API, or multi-port SMTP failover.
+  - Designed `buildAdminOtpEmailHtml()` featuring navy/gold administrative security branding, high-visibility 40px monospace authorization code, and critical tamper warnings.
+- **Dynamic Cloud Environment Variable Forwarding (`backend/config/database.php`)**:
+  - Injected runtime synchronization for `ADMIN_EMAIL` environment variable:
+    ```php
+    $adminEnvEmail = getenv('ADMIN_EMAIL') ?: ($_ENV['ADMIN_EMAIL'] ?? null);
+    if ($adminEnvEmail && filter_var($adminEnvEmail, FILTER_VALIDATE_EMAIL)) {
+        $pdo->prepare("UPDATE users SET email = ? WHERE role = 'admin' AND email != ?")->execute([$adminEnvEmail, $adminEnvEmail]);
+    }
+    ```
+  - Enables election officials to set their real personal or institutional email directly in Railway cloud variables without touching code.
+- **Frontend Adaptive Modal UI & Navigation (`frontend/login.html`)**:
+  - Dynamically switches header title ("Administrator 2FA Security Authorization"), banner text, and button label ("Authorize & Enter Console") when an administrative login is in progress.
+  - Corrected post-verification redirection: redirects administrators to `admin/dashboard.html` and voters to `voter/dashboard.html`.
 
 ---
 

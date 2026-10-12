@@ -7,7 +7,7 @@ The **Online Voting System (OVS)** is an automated, secure digital voting platfo
 The system is engineered as a **decoupled, headless architecture**:
 - **Headless Backend**: A lightweight, stateless PHP RESTful JSON API server.
 - **Static Decoupled Frontend**: Pure HTML5, CSS3, and modern Vanilla JavaScript, optimized for web deployment and native mobile compilation via **Capacitor** (iOS & Android).
-- **Stateless Bearer Authentication & 2FA OTP**: Custom 64-character Bearer token stored in `localStorage` and sent via `Authorization: Bearer <token>` headers, completely eliminating cookie session limitations across cross-origin mobile webviews. Protected by a 6-digit email OTP (One-Time Password) on voter sign-in.
+- **Stateless Bearer Authentication & 2FA OTP**: Custom 64-character Bearer token stored in `localStorage` and sent via `Authorization: Bearer <token>` headers, completely eliminating cookie session limitations across cross-origin mobile webviews. Protected by a mandatory 6-digit email OTP (One-Time Password) on both voter and administrator sign-in.
 - **Hardware Native Biometrics with In-App Password Fallback**: Pre-vote identity verification via `@capgo/capacitor-native-biometric` (fingerprint/face) on mobile devices, with seamless fallback to secure password confirmation.
 - **Online Banking e-Statement (e-BS) Ballot Delivery**: Automatically generates a bank-statement-style certified electronic ballot receipt encrypted with RC4 dual-key protection (Student ID + Date of Birth YYYYMMDD), attached directly to the voter's confirmation email and available for on-demand in-app download.
 - **Clean Cryptography**: Clean, direct voting flow without external AI facial recognition dependencies. Ballots are encrypted and recorded using AES-256-CBC database payloads.
@@ -114,13 +114,14 @@ c:/xampp/htdocs/voting/
 ## 3. Core Component Architecture
 
 ### 3.1 Authentication, 2FA OTP & Biometrics Security Architecture
-- **Stateless Bearer Token & Voter Email OTP Flow**:
-  1. Voter/Admin submits credentials (`student_id`/`username`/`email` + `password`) to `POST /backend/api/auth.php?action=login`.
-  2. For **Admins**: Server validates password and immediately generates a 64-character token (`bin2hex(random_bytes(32))`), saving it in `users.session_token`.
-  3. For **Voters**: Server generates a 6-digit numeric verification code (`random_int(100000, 999999)`), sets a 10-minute expiration timestamp in `users.login_otp_expires_at`, and dispatches a certified HTML email via **PHPMailer** using Gmail SMTP or configured HTTPS relays. The API returns `{ requires_otp: true, otp_user_id, masked_email }`.
-  4. The voter enters the 6-digit code on `login.html`, which calls `POST /backend/api/auth.php?action=verify_otp`. Upon successful validation, the OTP is invalidated and the 64-character session token is issued. A resend endpoint (`action=resend_otp`) with a 30-second cooldown is available.
-  5. Client saves token in `localStorage.setItem('voter_token', token)`.
-  6. Subsequent API calls attach header `Authorization: Bearer <token>`.
+- **Stateless Bearer Token & Two-Factor (2FA) Email OTP Flow**:
+  1. Voter or Administrator submits credentials (`student_id`/`username`/`email` + `password`) to `POST /backend/api/auth.php?action=login`.
+  2. For **Admins**: Server validates credentials, generates a 6-digit numeric verification code (`random_int(100000, 999999)`), records it in `users.login_otp` (10-minute expiry), and dispatches a certified Administrator Security Authorization email via `sendAdminLoginOtp()`. The API returns `{ success: true, requires_otp: true, role: 'admin', otp_user_id, masked_email }`. The admin email address is dynamically kept synchronized via `ADMIN_EMAIL` environment variable in `backend/config/database.php`.
+  3. For **Voters**: Server validates credentials (bcrypt hash or student ID fallback), generates a 6-digit numeric code, records it in `users.login_otp` (10-minute expiry), and dispatches an official voter verification email via `sendVoterLoginOtp()`. The API returns `{ success: true, requires_otp: true, role: 'voter', otp_user_id, masked_email }`.
+  4. The user (Admin or Voter) enters the 6-digit code into the interactive 2FA modal on `login.html`, calling `POST /backend/api/auth.php?action=verify_otp`. The modal dynamically styles its title, badge, and submit button for Administrator vs. Voter access.
+  5. Upon successful validation, the OTP is invalidated and a 64-character Bearer token (`bin2hex(random_bytes(32))`) is generated and returned. A resend endpoint (`action=resend_otp`) with a 30-second cooldown is available for both roles.
+  6. Client saves token in `localStorage` (`admin_token` and `voter_token`) and redirects according to role (`admin/dashboard.html` for administrators, `voter/dashboard.html` for voters).
+  7. Subsequent API calls attach header `Authorization: Bearer <token>`.
 - **Cloud Egress Firewall Outbound SMTP Mitigation**:
   - When outbound TCP ports 25, 465, or 587 are blocked by cloud PaaS firewalls (e.g., Railway Free/Hobby tiers resulting in timeout error 110), the system implements multi-channel mail delivery in `backend/includes/mailer.php`:
     - Direct Gmail SMTP with multi-port failover (465 SSL, 587 TLS).

@@ -51,79 +51,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'login') {
     }
 
     if ($user && $isPasswordValid) {
-        // ADMIN: Direct password authentication
-        if ($user['role'] === 'admin') {
-            $token = bin2hex(random_bytes(32));
-            $updateToken = $pdo->prepare("UPDATE users SET session_token = ? WHERE id = ?");
-            $updateToken->execute([$token, $user['id']]);
-            
+        if (empty($user['email'])) {
+            http_response_code(400);
             echo json_encode([
-                'success' => true, 
-                'token' => $token, 
-                'user' => [
-                    'id' => $user['id'],
-                    'role' => $user['role'],
-                    'full_name' => $user['full_name'],
-                    'student_id' => $user['student_id'],
-                    'has_voted' => (bool)$user['has_voted']
-                ]
+                'success' => false, 
+                'error' => 'No email address registered for this account. Please contact system support.'
             ]);
             exit;
         }
 
-        // VOTER: Require 6-digit email OTP verification
-        if ($user['role'] === 'voter') {
-            if (empty($user['email'])) {
-                http_response_code(400);
-                echo json_encode([
-                    'success' => false, 
-                    'error' => 'No email address registered for this voter account. Please contact election administration.'
-                ]);
-                exit;
-            }
+        // Generate secure 6-digit numeric OTP
+        $otp = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+        // OTP valid for 10 minutes
+        $expiresAt = date('Y-m-d H:i:s', time() + 600);
 
-            // Generate secure 6-digit numeric OTP
-            $otp = str_pad((string)random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
-            // OTP valid for 10 minutes
-            $expiresAt = date('Y-m-d H:i:s', time() + 600);
+        $updateOtp = $pdo->prepare("UPDATE users SET login_otp = ?, login_otp_expires_at = ? WHERE id = ?");
+        $updateOtp->execute([$otp, $expiresAt, $user['id']]);
 
-            $updateOtp = $pdo->prepare("UPDATE users SET login_otp = ?, login_otp_expires_at = ? WHERE id = ?");
-            $updateOtp->execute([$otp, $expiresAt, $user['id']]);
+        $mailDelivered = false;
+        $mailError = null;
 
-            $mailDelivered = false;
-            $mailError = null;
-
-            try {
-                sendVoterLoginOtp($user['email'], $user['full_name'], $otp);
-                $mailDelivered = true;
-            } catch (Exception $mailEx) {
-                $mailDelivered = false;
-                $mailError = $mailEx->getMessage();
-                error_log("Voter login OTP dispatch failed: " . $mailError);
-            }
-
-            $masked = maskEmailAddress($user['email']);
-            $respData = [
-                'success' => true,
-                'requires_otp' => true,
-                'otp_user_id' => (int)$user['id'],
-                'masked_email' => $masked,
-                'mail_delivered' => $mailDelivered
-            ];
-
-            if ($mailDelivered) {
-                $respData['message'] = "A 6-digit verification code has been sent to {$masked}.";
+        try {
+            if ($user['role'] === 'admin') {
+                sendAdminLoginOtp($user['email'], $user['full_name'], $otp);
             } else {
-                // Cloud platform (e.g. Railway) firewall blocked outbound SMTP (Error 110)
-                // Provide fallback code so voters are NEVER locked out of elections/testing
-                $respData['dev_otp'] = $otp;
-                $respData['cloud_notice'] = "Hosting server blocked outbound mail ports (Code 110). Verification code: {$otp}";
-                $respData['message'] = "Notice: Mail ports blocked by host firewall. Verification code: {$otp}";
+                sendVoterLoginOtp($user['email'], $user['full_name'], $otp);
             }
-
-            echo json_encode($respData);
-            exit;
+            $mailDelivered = true;
+        } catch (Exception $mailEx) {
+            $mailDelivered = false;
+            $mailError = $mailEx->getMessage();
+            error_log(ucfirst($user['role']) . " login OTP dispatch failed: " . $mailError);
         }
+
+        $masked = maskEmailAddress($user['email']);
+        $respData = [
+            'success' => true,
+            'requires_otp' => true,
+            'otp_user_id' => (int)$user['id'],
+            'role' => $user['role'],
+            'masked_email' => $masked,
+            'mail_delivered' => $mailDelivered
+        ];
+
+        if ($mailDelivered) {
+            $roleLabel = ($user['role'] === 'admin') ? 'administrative' : 'login';
+            $respData['message'] = "A 6-digit {$roleLabel} verification code has been sent to {$masked}.";
+        } else {
+            // Cloud platform (e.g. Railway) firewall blocked outbound SMTP (Error 110)
+            // Provide fallback code so users/admins are NEVER locked out of elections/testing
+            $respData['dev_otp'] = $otp;
+            $respData['cloud_notice'] = "Hosting server blocked outbound mail ports (Code 110). Verification code: {$otp}";
+            $respData['message'] = "Notice: Mail ports blocked by host firewall. Verification code: {$otp}";
+        }
+
+        echo json_encode($respData);
+        exit;
     } else {
         http_response_code(401);
         echo json_encode(['success' => false, 'error' => 'Invalid username or password.']);
@@ -142,13 +125,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'verify_otp') {
         exit;
     }
 
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ? AND role = 'voter' LIMIT 1");
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
     $stmt->execute([$otpUserId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user) {
         http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'Voter account not found.']);
+        echo json_encode(['success' => false, 'error' => 'Account not found.']);
         exit;
     }
 
@@ -197,17 +180,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'resend_otp') {
 
     if (!$otpUserId) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'error' => 'Invalid voter request.']);
+        echo json_encode(['success' => false, 'error' => 'Invalid account request.']);
         exit;
     }
 
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ? AND role = 'voter' LIMIT 1");
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ? LIMIT 1");
     $stmt->execute([$otpUserId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$user) {
         http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'Voter account not found.']);
+        echo json_encode(['success' => false, 'error' => 'Account not found.']);
         exit;
     }
 
@@ -222,19 +205,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'resend_otp') {
     $mailError = null;
 
     try {
-        sendVoterLoginOtp($user['email'], $user['full_name'], $otp);
+        if ($user['role'] === 'admin') {
+            sendAdminLoginOtp($user['email'], $user['full_name'], $otp);
+        } else {
+            sendVoterLoginOtp($user['email'], $user['full_name'], $otp);
+        }
         $mailDelivered = true;
     } catch (Exception $mailEx) {
         $mailDelivered = false;
         $mailError = $mailEx->getMessage();
-        error_log("Voter resend OTP dispatch failed: " . $mailError);
+        error_log(ucfirst($user['role']) . " resend OTP dispatch failed: " . $mailError);
     }
 
     $masked = maskEmailAddress($user['email']);
+    $roleLabel = ($user['role'] === 'admin') ? 'administrative' : 'verification';
     $respData = [
         'success' => true,
         'message' => $mailDelivered 
-            ? "A new verification code has been sent to {$masked}." 
+            ? "A new {$roleLabel} verification code has been sent to {$masked}." 
             : "Notice: Outbound mail ports blocked by host firewall. Verification code: {$otp}",
         'mail_delivered' => $mailDelivered
     ];

@@ -12,7 +12,7 @@ This skill defines how an Antigravity coding agent should understand, implement,
 The system is architected as a **headless, decoupled system**:
 1. **Stateless PHP Backend API** (`backend/`): Provides secure JSON REST endpoints, Bearer token authentication, 2FA Email OTP, CORS configuration, AES-256-CBC ballot encryption, and password-protected PDF e-Statement receipts.
 2. **Decoupled Client Frontend** (`frontend/`): Pure HTML5, CSS3, and modern Vanilla JavaScript, optimized for both desktop web browsers and native mobile app packaging via **Capacitor** (iOS & Android).
-3. **2FA Email OTP Sign-in**: Mandatory 6-digit numeric verification code dispatched to registered voter email on login, backed by multi-port SMTP failover and HTTPS Webhook relays.
+3. **2FA Email OTP Sign-in**: Mandatory 6-digit numeric verification code dispatched to registered voter or administrator email on login, backed by multi-port SMTP failover and HTTPS Webhook relays.
 4. **Hardware Native Biometrics with In-App Password Fallback**: Pre-vote identity verification via `@capgo/capacitor-native-biometric` (fingerprint/face) on mobile devices, with seamless fallback to secure password confirmation.
 5. **Online Banking e-Statement (e-BS) Ballot Delivery**: Automatically generates a bank-statement-style certified electronic ballot receipt encrypted with RC4 dual-key protection (Student ID + Date of Birth YYYYMMDD), attached directly to the voter's confirmation email and available for on-demand in-app download.
 6. **Edge-to-Edge Android Immersive Display**: Clean viewport rendering under transparent system bars with zero letterboxing and disabled elastic overscroll bounce.
@@ -27,7 +27,7 @@ The system is architected as a **headless, decoupled system**:
 - **Architecture Model:** Decoupled Headless Client-Server (REST API + Static SPA/MPA)
 - **Target Platforms:** Web (Desktop & Mobile browsers) + Native Mobile App (via Capacitor)
 - **Primary Roles:** Administrator (`admin`) and Voter/User (`voter`)
-- **Authentication:** Stateless Bearer Token (`Authorization: Bearer <token>`) persisted in `localStorage` + 2FA Email OTP for voters
+- **Authentication:** Stateless Bearer Token (`Authorization: Bearer <token>`) persisted in `localStorage` + Mandatory 2FA Email OTP for both voters and administrators
 - **Frontend Core:** Pure HTML5, CSS3, Vanilla JS (`frontend/js/api.js`, `frontend/js/components.js`)
 - **Backend Core:** PHP 8+ with MySQL PDO, CORS headers, AES-256-CBC ballot encryption, FPDF 1.86, and RC4 PDF protection
 - **Vote Lifecycle:** Candidate review → Digital ballot → Selections stored in `sessionStorage` → Confirmation screen → Biometric / Password identity verification → Encrypted atomic submission → Password-protected e-Statement email attachment & on-demand download → Dashboard confirmation badge
@@ -38,11 +38,9 @@ The system is architected as a **headless, decoupled system**:
 ## 2. API Specifications & Endpoints
 
 ### 2.1 Authentication (`backend/api/auth.php`)
-- `POST ?action=login`: Validates credentials (`username`/`student_id`/`email` + `password`). Supports dual password authentication for voters (matches either bcrypt hash of initial default password `FirstName + StudentNumber` or raw `StudentNumber` fallback).
-  - For **Admins**: Immediately returns `{ success: true, token: "...", user: { id, role, full_name, username } }`.
-  - For **Voters**: Generates 6-digit OTP, records in `users.login_otp` with 10-minute expiry, sends email, and returns `{ success: true, requires_otp: true, otp_user_id: ..., masked_email: "..." }`.
-- `POST ?action=verify_otp`: Validates 6-digit code against `users.login_otp` and expiration timestamp. Upon match, invalidates the code and returns `{ success: true, token: "...", user: { ... } }`.
-- `POST ?action=resend_otp`: Re-generates and re-dispatches OTP email with 30-second rate-limiting cooldown.
+- `POST ?action=login`: Validates credentials (`username`/`student_id`/`email` + `password`). Supports dual password authentication for voters (matches either bcrypt hash of initial default password `FirstName + StudentNumber` or raw `StudentNumber` fallback). For both Admins and Voters, generates a 6-digit OTP stored in `users.login_otp` (10-minute expiry), dispatches a tailored verification email (`sendAdminLoginOtp` or `sendVoterLoginOtp`), and returns `{ success: true, requires_otp: true, role: 'admin'|'voter', otp_user_id: ..., masked_email: "..." }`.
+- `POST ?action=verify_otp`: Validates 6-digit code against `users.login_otp` and expiration timestamp for any authorized account (admin or voter). Upon match, invalidates the code, generates a 64-character Bearer token, and returns `{ success: true, token: "...", user: { ... } }`.
+- `POST ?action=resend_otp`: Re-generates and re-dispatches role-appropriate OTP email with 30-second rate-limiting cooldown.
 - `GET ?action=me`: Validates Bearer token header. Returns authenticated user payload.
 - `POST ?action=logout`: Clears the user's `session_token` in the database.
 

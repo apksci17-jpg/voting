@@ -139,6 +139,19 @@ function getDBConnection() {
                 // Ignore if already dropped or restricted
             }
 
+            // Sync admin email from ADMIN_EMAIL environment variable if defined
+            try {
+                $adminEnvEmail = getenv('ADMIN_EMAIL') ?: ($_ENV['ADMIN_EMAIL'] ?? null);
+                if ($adminEnvEmail) {
+                    $adminEnvEmail = trim($adminEnvEmail);
+                    if (!empty($adminEnvEmail) && filter_var($adminEnvEmail, FILTER_VALIDATE_EMAIL)) {
+                        $pdo->prepare("UPDATE users SET email = ? WHERE role = 'admin' AND email != ?")->execute([$adminEnvEmail, $adminEnvEmail]);
+                    }
+                }
+            } catch (Exception $adminEmailEx) {
+                // Ignore if restricted
+            }
+
             // Auto-synchronize masterlist voters from Excel to database
             autoSyncMasterlistVoters($pdo);
         } catch (Exception $initEx) {

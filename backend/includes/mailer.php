@@ -67,6 +67,66 @@ function buildOtpEmailHtml($recipientName, $otpCode) {
 }
 
 /**
+ * Builds HTML email body for Administrator 2FA verification.
+ */
+function buildAdminOtpEmailHtml($recipientName, $otpCode) {
+    $escapedName = htmlspecialchars($recipientName, ENT_QUOTES, 'UTF-8');
+    $escapedOtp = htmlspecialchars($otpCode, ENT_QUOTES, 'UTF-8');
+
+    return "
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset='UTF-8'>
+        <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; margin: 0; padding: 0; }
+            .email-wrapper { max-width: 560px; margin: 30px auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15); }
+            .email-header { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); padding: 34px 26px; text-align: center; color: #ffffff; border-bottom: 3px solid #d97706; }
+            .admin-badge { display: inline-block; background: rgba(245, 158, 11, 0.2); border: 1px solid #f59e0b; color: #fef08a; padding: 4px 12px; border-radius: 99px; font-size: 11px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 12px; }
+            .email-header h1 { margin: 0; font-size: 22px; font-weight: 900; letter-spacing: -0.4px; }
+            .email-header p { margin: 6px 0 0 0; font-size: 13px; color: #bfdbfe; font-weight: 500; }
+            .email-body { padding: 32px 28px; color: #1e293b; line-height: 1.6; }
+            .greeting { font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 12px; }
+            .text { font-size: 14px; color: #475569; margin-bottom: 24px; }
+            .otp-box { background: #f8fafc; border: 2px dashed #3b82f6; border-radius: 14px; text-align: center; padding: 22px; margin-bottom: 24px; }
+            .otp-label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+            .otp-code { font-family: 'Courier New', Courier, monospace; font-size: 40px; font-weight: 900; letter-spacing: 10px; color: #1e40af; }
+            .otp-hint { font-size: 12px; font-weight: 700; color: #b45309; margin-top: 10px; }
+            .warning-box { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 14px 18px; border-radius: 6px; font-size: 12.5px; color: #78350f; margin-bottom: 24px; line-height: 1.5; }
+            .email-footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px 28px; text-align: center; font-size: 11.5px; color: #94a3b8; }
+        </style>
+    </head>
+    <body>
+        <div class='email-wrapper'>
+            <div class='email-header'>
+                <div class='admin-badge'>Administrator Security Notice</div>
+                <h1>Tomorrow Vote Administration</h1>
+                <p>Commission on Student Elections • Two-Factor Authentication</p>
+            </div>
+            <div class='email-body'>
+                <div class='greeting'>Greetings, {$escapedName}</div>
+                <div class='text'>
+                    An administrative sign-in request has been initiated for the <strong>Tomorrow Vote Election Console</strong>. Use the 6-digit authorization code below to verify your administrative identity:
+                </div>
+                <div class='otp-box'>
+                    <div class='otp-label'>Administrator 2FA Code</div>
+                    <div class='otp-code'>{$escapedOtp}</div>
+                    <div class='otp-hint'>Expires in 10 minutes. Strictly confidential.</div>
+                </div>
+                <div class='warning-box'>
+                    <strong>Security Advisory:</strong> This code grants high-privilege administrative access to election polling status, candidate registries, student rosters, and real-time vote ledgers. If you did not initiate this login, someone may have compromised your administrative credentials. Secure your account immediately.
+                </div>
+            </div>
+            <div class='email-footer'>
+                &copy; 2026 Tomorrow Vote Institutional Commission on Elections. All rights reserved.
+            </div>
+        </div>
+    </body>
+    </html>
+    ";
+}
+
+/**
  * Dispatches email via an HTTPS Webhook relay (e.g. Google Apps Script Web App).
  * Operates over Port 443 HTTPS which is never blocked by cloud firewalls.
  */
@@ -226,6 +286,34 @@ function sendVoterLoginOtp($recipientEmail, $recipientName, $otpCode) {
     $htmlBody = buildOtpEmailHtml($recipientName, $otpCode);
 
     // 1. If HTTPS Webhook URL is defined (bypasses cloud host SMTP blocking over port 443)
+    if (!empty(MAIL_WEBHOOK_URL)) {
+        return sendViaHttpsWebhook(MAIL_WEBHOOK_URL, $recipientEmail, $recipientName, $subject, $htmlBody, $otpCode);
+    }
+
+    // 2. If Brevo HTTPS API key is defined
+    if (!empty(BREVO_API_KEY)) {
+        return sendViaBrevo(BREVO_API_KEY, $recipientEmail, $recipientName, $subject, $htmlBody);
+    }
+
+    // 3. Fall back to standard SMTP (Port 465 SSL, then Port 587 STARTTLS)
+    return sendViaSmtp($recipientEmail, $recipientName, $subject, $htmlBody, $otpCode);
+}
+
+/**
+ * Dispatches Administrator 2FA OTP verification email.
+ * Tries HTTPS Webhook / Brevo first if configured, then falls back to direct SMTP.
+ *
+ * @param string $recipientEmail
+ * @param string $recipientName
+ * @param string $otpCode
+ * @return bool
+ * @throws Exception
+ */
+function sendAdminLoginOtp($recipientEmail, $recipientName, $otpCode) {
+    $subject = "[Security Alert] {$otpCode} is your Tomorrow Vote Administrator 2FA code";
+    $htmlBody = buildAdminOtpEmailHtml($recipientName, $otpCode);
+
+    // 1. If HTTPS Webhook URL is defined
     if (!empty(MAIL_WEBHOOK_URL)) {
         return sendViaHttpsWebhook(MAIL_WEBHOOK_URL, $recipientEmail, $recipientName, $subject, $htmlBody, $otpCode);
     }

@@ -63,15 +63,17 @@ If the existing code already implements a rule, preserve it unless the user expl
 - The frontend must communicate with the backend exclusively via HTTP JSON requests using `fetch` or the unified `frontend/js/api.js` client wrapper.
 - PHP files must NEVER render HTML views directly. All templating occurs on the client.
 
-### Rule 3.2 — Stateless Bearer Token & 2FA Email OTP Authentication
+### Rule 3.2 — Stateless Bearer Token & Mandatory 2FA Email OTP Authentication
 - Authentication is governed by random 64-character Bearer tokens generated upon login and persisted in `users.session_token`.
-- For **Voter accounts**, 2FA Email OTP verification is mandatory on every login:
+- Mandatory Two-Factor (2FA) Email OTP verification is enforced for **both Voter and Administrator accounts**:
   - The server generates a 6-digit numeric OTP (`random_int(100000, 999999)`), records it in `users.login_otp`, and sets a 10-minute expiration timestamp in `users.login_otp_expires_at`.
-  - The OTP is dispatched to the voter's registered email via PHPMailer with multi-port SMTP failover (465 SSL, 587 TLS) and HTTPS relay options (Google Apps Script Webhook, Brevo API).
+  - For voters, the code is dispatched via `sendVoterLoginOtp()` with voter portal branding.
+  - For administrators, the code is dispatched via `sendAdminLoginOtp()` with high-priority security alert headers and institutional administrator branding.
+  - Multi-port SMTP failover (465 SSL, 587 TLS) and HTTPS relay options (Google Apps Script Webhook, Brevo API) are utilized for reliable delivery.
+  - In cloud sandboxes where outbound ports are firewalled, `dev_otp` and non-blocking notifications prevent lockout.
   - The Bearer session token is issued ONLY after successful verification via `POST /backend/api/auth.php?action=verify_otp`.
-  - A resend endpoint (`action=resend_otp`) with a 30-second rate-limiting cooldown must be maintained.
-- For **Admin accounts**, credential validation immediately returns the 64-character Bearer token.
-- Clients store this token in `localStorage` (`voter_token`) and attach it via the `Authorization: Bearer <token>` HTTP header.
+  - A resend endpoint (`action=resend_otp`) with a 30-second rate-limiting cooldown is maintained for both roles.
+- Clients store this token in `localStorage` (`admin_token` for admins, `voter_token` for voters) and attach it via the `Authorization: Bearer <token>` HTTP header.
 - Do not rely on PHP cookie sessions (`$_SESSION`) for authentication, ensuring seamless compatibility across Capacitor mobile webviews and cross-origin environments.
 
 ### Rule 3.3 — CORS Policy

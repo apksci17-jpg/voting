@@ -547,25 +547,19 @@ c:/xampp/htdocs/voting/
 
 ---
 
-### X. Confidential Password Guide for Official Ballot e-Statement (Student Number + Surname)
-- **Stakeholder Directive**: When voters receive or download their official ballot PDF file, the email must provide a password guide only and strictly avoid displaying the raw password directly in the email. The guide specifies that the password is a combination of their Student Number and Surname.
-- **PDF Encryption Engine (`backend/includes/ballot_receipt.php`)**:
-  - Implemented `extractVoterSurname($fullName)` to cleanly extract surnames from various name formats (`"Surname, Firstname Middle."` and `"Firstname Lastname"`).
-  - Configured PDF standard 128-bit document encryption:
-    - Primary User Password: Voter's registered `Student Number` concatenated with their `Surname` in **CAPITAL LETTERS (UPPERCASE)** with no spaces (e.g. `240104785ALVAREZ`).
-    - Secondary Owner Password: Lowercase variant (`240104785alvarez`) to guarantee seamless opening across varying mobile PDF viewers.
-  - Updated PDF internal footer and statutory disclosure to reflect `Unlock Password: Student Number + Surname (UPPERCASE)`.
-- **Confidential Email Template Overhaul (`backend/includes/mailer.php`)**:
-  - **Zero Raw Password Exposure**: Completely eliminated the raw password display card (`.pw-value`), direct student ID printing, and date-of-birth hints.
-  - **Structured Banking-Grade Password Guide**:
-    - Formula Box: `[STUDENT NUMBER][SURNAME]`
-    - Clear Step-by-Step Breakdown: Part 1 (Student ID Number) + Part 2 (Surname in CAPITAL LETTERS).
-    - Illustrative Example: `If your Student Number is 240104785 and your Surname is ALVAREZ, your unlock password is: 240104785ALVAREZ`
-    - Security Footnote: Explicitly clarifies that raw passwords are kept strictly confidential and never displayed directly in notification emails.
-  - Updated plain text fallback (`AltBody`) in `sendBallotReceiptViaSmtp()` with the matching formula and security guidance.
-- **Voter Dashboard In-App Guidance (`frontend/voter/dashboard.html`)**:
-  - Replaced raw password references in the post-voting confirmation banner with the confidential password guide.
-  - Added an in-app password guide hint directly beneath the "Download Statement of Ballot (.PDF)" action link.
+### X. Confidential Password Guidance for Official Ballot e-Statement Delivery & Downloads
+- **Stakeholder Directive**: When the voter receives or downloads their official ballot PDF file, the email should guide the voter regarding their password only, avoiding displaying the password directly in the email. The guide must specify the student ID number format (e.g. account `240114837` will have password `240114837`), clearly explaining that the password depends on who is using the voter account.
+- **Redesigned Password Guidance Card (`backend/includes/mailer.php`)**:
+  - Removed the legacy `.pw-display-card` which printed the student's actual ID and birthdate directly in plaintext (`{$escapedStudentId}`, `{$dobDisplay}`).
+  - Introduced `.pw-guide-card` featuring `.pw-guide-tag` ("Password Security Guide"), clear format instructions (official Student ID Number without hyphens or spaces), and the explicit requested example:
+    > "For example, if the voter account is **240114837**, the password to open the document is also **240114837**. The password depends on the specific voter account being accessed."
+  - In step-by-step instructions, replaced hardcoded credential displays in step 2 with general guidance: "When prompted for a password by your PDF viewer, enter your **Student ID Number**."
+  - Updated plain text fallback (`AltBody`) to provide matching confidential password guidance instead of printing the student's actual credentials.
+- **Voter Dashboard Download Guidance (`frontend/voter/dashboard.html`)**:
+  - Updated post-voting receipt notice banner: replaced raw `(<code>${studentId}</code>)` display with instructional guidance: "unlock the PDF using your **Student ID Number** (e.g. if the account is `240114837`, the password is `240114837`, depending on who is using the voter account)."
+  - Added a password format hint beneath the persistent "Download Statement of Ballot (.PDF)" action button on the voter card.
+- **API Receipt Notice Alignment (`backend/api/voter.php`)**:
+  - Updated confirmation notice string in `action=cast_vote`: "(unlocked using your Student ID Number, e.g. 240114837)".
 
 ---
 

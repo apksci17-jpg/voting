@@ -171,21 +171,20 @@ Never authorize actions based on `localStorage` role flags, hidden form inputs, 
 - Biometric authentication must strictly utilize device-native hardware APIs (Android BiometricPrompt / iOS LocalAuthentication via `@capgo/capacitor-native-biometric`).
 - If biometric hardware is not available, not enrolled, or bypassed, the system must provide a seamless, secure in-app password verification fallback.
 
-### Rule 5.5 — Password-Protected e-Statement (e-BS) Delivery & Confidential Password Guide
+### Rule 5.5 — Password-Protected e-Statement (e-BS) Delivery
 - Immediately upon successful vote commitment, the system must generate a bank-statement-style electronic ballot receipt PDF via `generateProtectedBallotReceiptPdf()`.
 - The PDF document must be encrypted using 128-bit/40-bit RC4 stream encryption (`FPDF_Protection`).
-- **Encryption Password Standard**:
-  - **Primary unlock password**: Voter's Student Number concatenated with their Surname in **CAPITAL LETTERS (UPPERCASE)** with no spaces (e.g. `240104785ALVAREZ`).
-  - **Secondary unlock password**: Lowercase variant (`240104785alvarez`) for compatibility across diverse reader software.
-- **Strict Confidentiality & Password Guide**:
-  - Notification emails and in-app notices must **NEVER directly display the voter's actual password**.
-  - Emails must provide a structured **Password Format Guide**:
-    - Formula: `[STUDENT NUMBER][SURNAME]`
-    - Rule: Registered Student Number + Registered Surname in CAPITAL LETTERS (no spaces).
-    - Illustrative Example demonstrating the format without exposing personal voter credentials.
-- The protected PDF must be attached directly to an official electronic statement confirmation email dispatched via PHPMailer / HTTPS Webhook / Brevo.
+- The encryption password must be set to the student's unique credentials:
+  - **Primary unlock password**: Voter's Student ID (`users.student_id`).
+  - **Alternate unlock password**: Voter's Date of Birth in `YYYYMMDD` format (`users.date_of_birth`).
+- The protected PDF must be attached directly to an official electronic statement confirmation email dispatched via PHPMailer.
 - Email dispatch failures (e.g. cloud host port blocks) must NEVER abort or roll back the committed vote transaction.
-- Voters must be able to download their password-protected receipt on demand via `action=download_receipt` at any time from their voter portal, accompanied by the confidential password guide.
+- Voters must be able to download their password-protected receipt on demand via `action=download_receipt` at any time from their voter portal.
+
+### Rule 5.5.1 — Confidential Password Guidance in Emails & Downloads
+- Emails and download notices accompanying the official ballot e-Statement PDF must provide **password security guidance** without displaying the voter's actual password in plaintext.
+- The email must explain the password rule (Student ID Number without hyphens or spaces) and provide an illustrative example (e.g. `240114837`), clearly noting that the password depends on the specific voter account being accessed.
+- Raw password values (such as the voter's actual Student ID or Date of Birth digits) must never be displayed in the email's password guidance card or step-by-step opening instructions.
 
 ---
 

@@ -482,25 +482,17 @@ function buildBallotReceiptEmailHtml($recipientName, $studentId, $voteTimestamp,
             .att-name { font-size: 14px; font-weight: 800; color: #0f172a; word-break: break-all; }
             .att-meta { font-size: 12px; color: #64748b; font-weight: 600; margin-top: 2px; }
 
-            /* Security & Password Alert Box */
+            /* Security & Password Guidance Box */
             .bank-password-box { background: #fffbeb; border: 2px solid #f59e0b; border-radius: 14px; padding: 22px; margin-bottom: 26px; }
             .bank-pw-title { font-size: 14px; font-weight: 900; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-            .pw-guide-card { background: #ffffff; border: 1.5px solid #fcd34d; border-radius: 12px; padding: 18px; margin: 14px 0; box-shadow: 0 2px 8px rgba(217, 119, 6, 0.08); }
-            .pw-guide-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; border-bottom: 1px dashed #fde68a; padding-bottom: 8px; }
-            .pw-guide-badge { background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 99px; text-transform: uppercase; letter-spacing: 0.5px; border: 1px solid #fde68a; }
-            .pw-confidential-note { font-size: 11.5px; color: #b45309; font-weight: 600; }
-            .pw-formula-box { background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 10px; padding: 12px; text-align: center; margin-bottom: 14px; }
-            .pw-formula-label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
-            .pw-formula-val { font-family: 'Courier New', Courier, monospace; font-size: 20px; font-weight: 900; color: #1e3a8a; letter-spacing: 2px; }
-            .pw-formula-sub { font-size: 11.5px; color: #475569; margin-top: 4px; font-weight: 500; }
-            .pw-breakdown-table { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-            .pw-step-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: #334155; }
-            .pw-step-num { width: 20px; height: 20px; border-radius: 50%; background: #0b224d; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; }
-            .pw-step-desc { flex: 1; }
-            .pw-step-desc code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #0f172a; font-family: monospace; }
-            .pw-example-banner { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #1e40af; line-height: 1.5; }
-            .pw-example-banner code { background: #ffffff; padding: 1px 5px; border-radius: 4px; font-size: 11.5px; color: #1e3a8a; font-weight: 700; border: 1px solid #dbeafe; }
-            .steps-list { margin: 10px 0 0 0; padding-left: 20px; font-size: 12.5px; color: #78350f; line-height: 1.6; }
+            .pw-guide-card { background: #ffffff; border: 2px dashed #d97706; border-radius: 12px; padding: 16px 18px; margin: 14px 0; text-align: left; }
+            .pw-guide-tag { display: inline-block; background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; padding: 3px 10px; border-radius: 99px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px; }
+            .pw-guide-title { font-size: 15px; font-weight: 900; color: #78350f; margin-bottom: 5px; }
+            .pw-guide-body { font-size: 13px; color: #451a03; line-height: 1.5; margin-bottom: 12px; }
+            .pw-guide-example { background: #fefce8; border: 1px solid #fef08a; border-left: 4px solid #ca8a04; border-radius: 6px; padding: 10px 14px; }
+            .pw-example-heading { font-size: 11px; font-weight: 800; color: #854d0e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+            .pw-example-content { font-size: 12.5px; color: #713f12; line-height: 1.45; }
+            .steps-list { margin: 12px 0 0 0; padding-left: 20px; font-size: 13px; color: #78350f; line-height: 1.6; }
             .steps-list li { margin-bottom: 6px; }
 
             /* Statement Overview Ledger */
@@ -544,56 +536,35 @@ function buildBallotReceiptEmailHtml($recipientName, $studentId, $voteTimestamp,
                     </div>
                 </div>
 
-                <!-- Banking-Style Password Guide Box -->
+                <!-- Banking-Style Password Guidance Box -->
                 <div class='bank-password-box'>
                     <div class='bank-pw-title'>
-                        <span>&#128274;</span> Confidential: Your Attached Statement is Password-Protected
+                        <span>&#128274;</span> Important: Your Attached Statement is Password-Protected
                     </div>
-                    <p style='margin: 0 0 14px 0; font-size: 13px; color: #78350f; line-height: 1.5;'>
-                        To safeguard your voter privacy and comply with institutional electoral confidentiality, your attached PDF statement is encrypted. To open and view your document, please refer to the password guide below:
+                    <p style='margin: 0; font-size: 13px; color: #78350f;'>
+                        To safeguard your voter privacy and comply with electoral data confidentiality, your attached PDF statement is encrypted.
                     </p>
                     
                     <div class='pw-guide-card'>
-                        <div class='pw-guide-header'>
-                            <span class='pw-guide-badge'>Password Format Guide</span>
-                            <span class='pw-confidential-note'>&#128272; Actual password is hidden for your security</span>
+                        <div class='pw-guide-tag'>Password Security Guide</div>
+                        <div class='pw-guide-title'>How to Unlock Your Statement</div>
+                        <div class='pw-guide-body'>
+                            For security purposes, your password is not displayed directly in this email. Your unlock password is your official <strong>Student ID Number</strong> without hyphens or spaces.
                         </div>
-                        <div class='pw-formula-box'>
-                            <div class='pw-formula-label'>Your Unlock Password Formula:</div>
-                            <div class='pw-formula-val'>[STUDENT NUMBER][SURNAME]</div>
-                            <div class='pw-formula-sub'>Combination of your Student Number and Surname in UPPERCASE (no spaces)</div>
-                        </div>
-
-                        <div class='pw-breakdown-table'>
-                            <div class='pw-step-row'>
-                                <div class='pw-step-num'>1</div>
-                                <div class='pw-step-desc'>
-                                    <strong>Student Number:</strong> Your registered Student ID Number
-                                </div>
+                        <div class='pw-guide-example'>
+                            <div class='pw-example-heading'>Password Format Guide:</div>
+                            <div class='pw-example-content'>
+                                For example, if the voter account is <strong>240114837</strong>, the password to open the document is also <strong>240114837</strong>. The password depends on the specific voter account being accessed.
                             </div>
-                            <div class='pw-step-row'>
-                                <div class='pw-step-num'>2</div>
-                                <div class='pw-step-desc'>
-                                    <strong>Surname:</strong> Your registered last name in <strong>CAPITAL LETTERS</strong>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class='pw-example-banner'>
-                            <strong>Illustrative Example:</strong> If your Student Number is <code>240104785</code> and your Surname is <code>ALVAREZ</code>, your unlock password is: <strong>240104785ALVAREZ</strong>
                         </div>
                     </div>
 
-                    <div style='font-size: 12.5px; font-weight: 800; color: #92400e; margin: 16px 0 6px 0;'>Instructions to Open Your Statement:</div>
+                    <div style='font-size: 12.5px; font-weight: 800; color: #92400e; margin-bottom: 4px;'>Instructions to Open Your Statement:</div>
                     <ol class='steps-list'>
-                        <li>Download and open the attached statement file (<strong>{$escapedFilename}</strong>).</li>
-                        <li>When prompted for a password by your PDF viewer (Adobe Acrobat, Google Chrome, Apple Preview, or mobile reader), enter your <strong>Student Number + Surname (in CAPITAL LETTERS, no spaces)</strong>.</li>
-                        <li>Select <em>Open</em> or <em>OK</em> to view your certified ballot transaction record.</li>
+                        <li>Download and open the attached file (<strong>{$escapedFilename}</strong>).</li>
+                        <li>When prompted for a password by your PDF viewer (Adobe Acrobat, Google Chrome, or mobile reader), enter your <strong>Student ID Number</strong>.</li>
+                        <li>Tap <em>Open</em> or <em>OK</em> to view your certified ballot record." . (!empty($dobDisplay) ? "<br><em>(Alternate unlock key: Your Date of Birth in YYYYMMDD format is also accepted).</em>" : "") . "</li>
                     </ol>
-
-                    <div style='margin-top: 12px; font-size: 11.5px; color: #a16207; font-style: italic;'>
-                        &#9432; Note: To protect voter credential confidentiality, your exact password is not displayed in this email.
-                    </div>
                 </div>
 
                 <!-- Statement Overview Table -->
@@ -800,7 +771,7 @@ function sendBallotReceiptViaSmtp($recipientEmail, $recipientName, $subject, $ht
             $mail->isHTML(true);
             $mail->Subject = $subject;
             $mail->Body    = $htmlBody;
-            $mail->AltBody = "Dear {$recipientName},\n\nYour official Electronic Statement of Ballot for the Bestlink College of the Philippines Supreme Student Council General Elections 2026 has been generated.\n\nYour password-protected statement is attached as: {$pdfFilename}\n\nPASSWORD GUIDE:\nYour statement is encrypted for security. To open the file, use your Student Number followed by your Surname in CAPITAL LETTERS (no spaces).\nFormat: [STUDENT_NUMBER][SURNAME]\nExample: If your Student Number is 240104785 and your Surname is ALVAREZ, your password is: 240104785ALVAREZ\n(Note: To safeguard your confidentiality, your actual password is not displayed in this email).\n\nThank you for exercising your right to vote!\n\nBestlink College of the Philippines — Commission on Student Elections";
+            $mail->AltBody = "Dear {$recipientName},\n\nYour official Electronic Statement of Ballot for the Bestlink College of the Philippines Supreme Student Council General Elections 2026 has been generated.\n\nYour password-protected statement is attached as: {$pdfFilename}\n\nHOW TO OPEN YOUR STATEMENT:\n1. Open the attached PDF file.\n2. When prompted for a password, enter your Student ID Number.\n   (Password Guide: For security, your password is not printed in this email. Your unlock password is your registered Student ID Number. For example, if the voter account is 240114837, the document password is 240114837, depending on who is using the account).\n3. Tap Open or OK to view your certified ballot record.\n\nThank you for exercising your right to vote!\n\nBestlink College of the Philippines — Commission on Student Elections";
 
             $mail->send();
             return true;

@@ -282,13 +282,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'cast_vote') {
 
         try {
             $selectionsDetails = getBallotSelectionsDetails($pdo, $finalVotes);
-            $surname = extractVoterSurname($user['full_name'] ?? '');
-            $cleanSurname = preg_replace('/[^a-zA-Z0-9]/', '', $surname);
-            $pdfPassword = !empty($cleanSurname) ? ($studentId . strtoupper($cleanSurname)) : $studentId;
-            $pdfAltPassword = !empty($cleanSurname) ? ($studentId . strtolower($cleanSurname)) : $studentId;
-
-            // Generate password-protected bank-statement PDF (unlocked with voter's Student Number + Surname)
-            $pdfContent = generateProtectedBallotReceiptPdf($user, $selectionsDetails, $voteTimestamp, $verificationHash, $pdfPassword, $pdfAltPassword);
+            $cleanDob = !empty($user['date_of_birth']) ? preg_replace('/[^0-9]/', '', $user['date_of_birth']) : null;
+            // Generate password-protected bank-statement PDF (unlocked with voter's Student ID or birthdate)
+            $pdfContent = generateProtectedBallotReceiptPdf($user, $selectionsDetails, $voteTimestamp, $verificationHash, $studentId, $cleanDob);
 
             if (!empty($user['email'])) {
                 $emailSent = sendVoterBallotReceipt($user['email'], $user['full_name'], $studentId, $voteTimestamp, $verificationHash, $pdfContent, null, $user);
@@ -306,7 +302,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'cast_vote') {
             'student_id' => $studentId,
             'verification_hash' => $verificationHash,
             'notice' => $emailSent 
-                ? "An official password-protected Electronic Statement of Ballot has been sent to {$user['email']}. Follow the email guide (Student Number and Surname) to open your statement."
+                ? "An official password-protected Electronic Statement of Ballot has been sent to {$user['email']} (unlocked using your Student ID Number, e.g. 240114837)."
                 : "Your official ballot has been cryptographically recorded."
         ]);
     } else {
@@ -338,13 +334,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'download_receipt') {
     $studentId = !empty($user['student_id']) ? trim($user['student_id']) : trim($user['username']);
     $verificationHash = hash('sha256', $user['id'] . '|' . $studentId . '|' . $voteTimestamp . '|' . json_encode($finalVotes));
 
-    $surname = extractVoterSurname($user['full_name'] ?? '');
-    $cleanSurname = preg_replace('/[^a-zA-Z0-9]/', '', $surname);
-    $pdfPassword = !empty($cleanSurname) ? ($studentId . strtoupper($cleanSurname)) : $studentId;
-    $pdfAltPassword = !empty($cleanSurname) ? ($studentId . strtolower($cleanSurname)) : $studentId;
-
+    $cleanDob = !empty($user['date_of_birth']) ? preg_replace('/[^0-9]/', '', $user['date_of_birth']) : null;
     $selectionsDetails = getBallotSelectionsDetails($pdo, $finalVotes);
-    $pdfContent = generateProtectedBallotReceiptPdf($user, $selectionsDetails, $voteTimestamp, $verificationHash, $pdfPassword, $pdfAltPassword);
+    $pdfContent = generateProtectedBallotReceiptPdf($user, $selectionsDetails, $voteTimestamp, $verificationHash, $studentId, $cleanDob);
 
     $cleanId = preg_replace('/[^a-zA-Z0-9_-]/', '_', $studentId);
     $filename = "eStatement_Ballot_{$cleanId}.pdf";

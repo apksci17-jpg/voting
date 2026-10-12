@@ -14,7 +14,7 @@ The system is architected as a **headless, decoupled system**:
 2. **Decoupled Client Frontend** (`frontend/`): Pure HTML5, CSS3, and modern Vanilla JavaScript, optimized for both desktop web browsers and native mobile app packaging via **Capacitor** (iOS & Android).
 3. **2FA Email OTP Sign-in**: Mandatory 6-digit numeric verification code dispatched to registered voter or administrator email on login, backed by multi-port SMTP failover and HTTPS Webhook relays.
 4. **Hardware Native Biometrics with In-App Password Fallback**: Pre-vote identity verification via `@capgo/capacitor-native-biometric` (fingerprint/face) on mobile devices, with seamless fallback to secure password confirmation.
-5. **Online Banking e-Statement (e-BS) Ballot Delivery**: Automatically generates a bank-statement-style certified electronic ballot receipt encrypted with RC4 dual-key protection (Student Number + Surname uppercase/lowercase), attached directly to the voter's confirmation email and available for on-demand in-app download. The email and voter portal strictly guide the voter on the password formula without displaying the raw password directly.
+5. **Online Banking e-Statement (e-BS) Ballot Delivery & Confidential Password Guide**: Automatically generates a bank-statement-style certified electronic ballot receipt encrypted with RC4 dual-key protection (Student ID + Date of Birth YYYYMMDD), attached directly to the voter's confirmation email and available for on-demand in-app download. The email provides confidential password format guidance (Student ID Number without hyphens, e.g. `240114837`) and avoids exposing the voter's literal password directly.
 6. **Edge-to-Edge Android Immersive Display**: Clean viewport rendering under transparent system bars with zero letterboxing and disabled elastic overscroll bounce.
 7. **SVG Visual Standard**: Replaced all legacy emojis with sharp, scalable, accessible inline vector SVG icons across all views.
 8. **Authoritative Class Roster & Automated Database Synchronization**: Full integration of BSIT 31008 class masterlist (`backend/includes/voter_masterlist.php`) featuring 53 verified voters with genuine student emails, dual password credentials (hashed `FirstName + StudentNumber` or raw `StudentNumber`), and automatic one-time database migration on Railway cloud instances via `autoSyncMasterlistVoters($pdo)` and `entrypoint.sh`.
@@ -30,7 +30,7 @@ The system is architected as a **headless, decoupled system**:
 - **Authentication:** Stateless Bearer Token (`Authorization: Bearer <token>`) persisted in `localStorage` + Mandatory 2FA Email OTP for both voters and administrators
 - **Frontend Core:** Pure HTML5, CSS3, Vanilla JS (`frontend/js/api.js`, `frontend/js/components.js`)
 - **Backend Core:** PHP 8+ with MySQL PDO, CORS headers, AES-256-CBC ballot encryption, FPDF 1.86, and RC4 PDF protection
-- **Vote Lifecycle:** Candidate review → Digital ballot → Selections stored in `sessionStorage` → Confirmation screen → Biometric / Password identity verification → Encrypted atomic submission → Confidential password-guided e-Statement email attachment & on-demand download → Dashboard confirmation badge
+- **Vote Lifecycle:** Candidate review → Digital ballot → Selections stored in `sessionStorage` → Confirmation screen → Biometric / Password identity verification → Encrypted atomic submission → Password-protected e-Statement email attachment & on-demand download → Dashboard confirmation badge
 - **Administrative Lifecycle:** Candidate management → Polling control (`OPEN`/`CLOSED`) → Live results aggregation → Certified PDF audit backups
 
 ---
@@ -47,10 +47,9 @@ The system is architected as a **headless, decoupled system**:
 ### 2.2 Voter Subsystem (`backend/api/voter.php`)
 - `GET ?action=dashboard`: Returns voter status, full name, election status (`OPEN`/`CLOSED`), and `has_voted` flag.
 - `GET ?action=candidates`: Returns all candidates grouped by positions in display order.
-- `POST ?action=verify_password`: Securely validates voter's password prior to casting ballot when biometrics are unavailable or bypassed. Supports dual password authentication (bcrypt hash or raw student ID fallback). Enforces strict 3-attempt limit; upon 3 failures, triggers progressive lockout (60s -> 120s -> 300s -> 600s), dispatches security alert email (`sendPasswordLockoutAlert`), and returns HTTP 423 with remaining seconds.
-- `GET ?action=password_status`: Returns current lock state (`is_locked`), remaining countdown seconds (`remaining_seconds`), failed attempts, and remaining attempts.
-- `POST ?action=cast_vote`: Commits voter choices. Enforces account lockout checks and validates fallback password with progressive lockout safeguards. Encrypts payload with AES-256-CBC, inserts into `votes`, and sets `has_voted = 1` inside an atomic transaction. Triggers `generateProtectedBallotReceiptPdf()` and dispatches confidential password-guided e-Statement email via PHPMailer.
-- `GET ?action=download_receipt`: Streams the voter's password-protected e-Statement PDF receipt (`eStatement_Ballot_[student_id].pdf`) directly to the client browser or Capacitor app, unlockable via Student Number + Surname.
+- `POST ?action=verify_password`: Securely validates voter's password prior to casting ballot when biometrics are unavailable or bypassed. Supports dual password authentication (bcrypt hash or raw student ID fallback).
+- `POST ?action=cast`: Commits voter choices. Optionally validates password (with dual-credential fallback). Encrypts payload with AES-256-CBC, inserts into `votes`, and sets `has_voted = 1` inside an atomic transaction. Triggers `generateProtectedBallotReceiptPdf()` and dispatches password-protected e-Statement email via PHPMailer.
+- `GET ?action=download_receipt`: Streams the voter's password-protected e-Statement PDF receipt (`eStatement_Ballot_[student_id].pdf`) directly to the client browser or Capacitor app.
 - `GET ?action=profile`: Returns student identity info (student ID, email, full name, birthdate).
 - `POST ?action=update_profile`: Updates voter's editable full name.
 
@@ -122,16 +121,15 @@ The frontend is specifically structured for direct compilation into native iOS a
 - **Dual-Key Document Password Protection (`backend/includes/fpdf_protection.php`)**:
   - Extends `FPDF` with standard 128-bit/40-bit RC4 stream encryption.
   - Implements dual unlock keys:
-    - **Primary password**: Voter's Student Number + Surname in CAPITAL LETTERS (UPPERCASE) with no spaces (e.g. `240104785ALVAREZ`).
-    - **Alternate password**: Lowercase variant (`240104785alvarez`) ensuring seamless unlocking across various desktop and mobile PDF viewers.
-- **Delivery Mailer & Confidential Password Guide (`backend/includes/mailer.php`)**:
+    - **Primary password**: Voter's Student ID (`users.student_id`).
+    - **Alternate password**: Voter's Date of Birth in `YYYYMMDD` format (`users.date_of_birth`).
+- **Delivery Mailer (`backend/includes/mailer.php`)**:
   - `sendVoterBallotReceipt($voterEmail, $voterName, $studentId, $pdfContent, $birthdate)`:
     - Attaches encrypted PDF with MIME type `application/pdf` and filename `eStatement_Ballot_[student_id].pdf`.
-    - Dispatches rich HTML email strictly **avoiding displaying the raw voter password directly**.
-    - Features a banking-grade **Password Format Guide**: formula box (`[STUDENT NUMBER][SURNAME]`), step breakdown, format specifications (CAPITAL LETTERS, no spaces), illustrative example (`240104785ALVAREZ`), and confidentiality advisory.
+    - Dispatches rich HTML email with attachment card, large monospace password reminder badge, 3-step opening instructions, and banking-grade security advisory.
   - Execution is non-blocking: mail network latency or timeout never aborts the committed vote transaction.
 - **On-Demand In-App Download (`backend/api/voter.php`)**:
-  - Endpoint `GET ?action=download_receipt` streams the password-protected receipt binary directly with `Content-Type: application/pdf` and `Content-Disposition: attachment; filename="eStatement_Ballot_[student_id].pdf"`. Accompanied by in-app password guide instructions on the dashboard.
+  - Endpoint `GET ?action=download_receipt` streams the password-protected receipt binary directly with `Content-Type: application/pdf` and `Content-Disposition: attachment; filename="eStatement_Ballot_[student_id].pdf"`.
 
 ---
 

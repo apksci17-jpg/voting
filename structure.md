@@ -9,7 +9,7 @@ The system is engineered as a **decoupled, headless architecture**:
 - **Static Decoupled Frontend**: Pure HTML5, CSS3, and modern Vanilla JavaScript, optimized for web deployment and native mobile compilation via **Capacitor** (iOS & Android).
 - **Stateless Bearer Authentication & 2FA OTP**: Custom 64-character Bearer token stored in `localStorage` and sent via `Authorization: Bearer <token>` headers, completely eliminating cookie session limitations across cross-origin mobile webviews. Protected by a mandatory 6-digit email OTP (One-Time Password) on both voter and administrator sign-in.
 - **Hardware Native Biometrics with In-App Password Fallback**: Pre-vote identity verification via `@capgo/capacitor-native-biometric` (fingerprint/face) on mobile devices, with seamless fallback to secure password confirmation.
-- **Online Banking e-Statement (e-BS) Ballot Delivery**: Automatically generates a bank-statement-style certified electronic ballot receipt encrypted with RC4 dual-key protection (Student Number + Surname uppercase/lowercase), attached directly to the voter's confirmation email and available for on-demand in-app download. The email and voter portal provide a confidential password format guide and strictly never expose the raw password in messages.
+- **Online Banking e-Statement (e-BS) Ballot Delivery**: Automatically generates a bank-statement-style certified electronic ballot receipt encrypted with RC4 dual-key protection (Student ID + Date of Birth YYYYMMDD), attached directly to the voter's confirmation email and available for on-demand in-app download.
 - **Clean Cryptography**: Clean, direct voting flow without external AI facial recognition dependencies. Ballots are encrypted and recorded using AES-256-CBC database payloads.
 
 ---
@@ -176,10 +176,11 @@ c:/xampp/htdocs/voting/
 - **Digital Ballot**: Interactive candidate selection cards with active ring states and animated SVG checkmarks.
 - **Ballot Persistence**: Uses client-side `sessionStorage` between `ballot.html` and `confirm_vote.html` before final server submission.
 - **Tamper-Evident Encryption**: Votes are encrypted using AES-256-CBC and committed inside a MySQL transaction that flags the voter account as `has_voted = 1`, enforcing the strictly audited *One-Student, One-Vote* mandate.
-- **Automated e-Statement Generation & Confidential Delivery**:
-  - Upon successful vote commitment, the server automatically generates a password-protected electronic statement PDF via `generateProtectedBallotReceiptPdf()`, encrypted with the voter's Student Number and Surname.
-  - The encrypted PDF is attached to an official confirmation email dispatched to the student's registered address featuring a structured password guide without exposing the raw password.
-  - The voter can also download the receipt at any time via `GET /backend/api/voter.php?action=download_receipt` from their dashboard, with accompanying in-app password guide instructions.
+- **Automated e-Statement Generation & Dispatch**:
+  - Upon successful vote commitment, the server automatically generates a password-protected electronic statement PDF via `generateProtectedBallotReceiptPdf()`.
+  - The encrypted PDF is attached to an official confirmation email dispatched to the student's registered address.
+  - The email provides confidential password format guidance (Student ID Number without hyphens, e.g. `240114837`) and avoids exposing the voter's literal password directly.
+  - The voter can also download the receipt at any time via `GET /backend/api/voter.php?action=download_receipt` from their dashboard.
 
 ### 3.5 Native Mobile Experience, Edge-to-Edge & Universal Candidate Modal
 - **Edge-to-Edge Layout & Full Viewport Immersion**:
@@ -233,19 +234,18 @@ c:/xampp/htdocs/voting/
 - **Dual-Key Document Password Protection (`backend/includes/fpdf_protection.php`)**:
   - Implements standard 128-bit/40-bit RC4 stream encryption with OpenSSL and pure-PHP fallback engine.
   - Dual unlock keys:
-    - **Primary password**: Voter's Student Number + Surname in CAPITAL LETTERS (UPPERCASE) with no spaces (e.g. `240104785ALVAREZ`).
-    - **Alternate password**: Lowercase variant (`240104785alvarez`) ensuring seamless document unlocking across mobile and desktop PDF readers.
-- **Confidential Password Guide & Delivery Email (`backend/includes/mailer.php`)**:
+    - **Primary password**: Voter's Student ID (`users.student_id`).
+    - **Alternate password**: Voter's Date of Birth in `YYYYMMDD` format (`users.date_of_birth`).
+- **Official Delivery Email with PDF Attachment (`backend/includes/mailer.php`)**:
   - Dispatched immediately upon vote commitment via PHPMailer with MIME `Content-Disposition: attachment; filename="eStatement_Ballot_[student_id].pdf"`.
   - Structured as an official electronic statement advice email:
     - Dedicated attachment preview card with `.PDF` icon and file details.
-    - **Banking-Grade Password Format Guide**: Strictly avoids displaying the raw voter password directly in the email body.
-    - Features a formula box (`[STUDENT NUMBER][SURNAME]`), step-by-step breakdown, format requirements (CAPITAL LETTERS, no spaces), and an illustrative example (`240104785ALVAREZ`).
-    - Electronic statement summary table and banking-grade confidentiality and anti-fraud advisory.
+    - Prominent amber password reminder box with large monospace password badge and 3-step opening instructions.
+    - Electronic statement summary table and banking-grade anti-fraud advisory.
 - **Non-Blocking Execution & In-App Download (`backend/api/voter.php`)**:
   - Email dispatch failures (e.g. cloud host port blocks) are safely logged without rolling back the committed vote transaction.
   - Endpoint `GET /backend/api/voter.php?action=download_receipt` enables direct PDF download at any time from the voter dashboard.
-  - Post-voting dashboard banner provides immediate visual confirmation and one-click statement download alongside the password format guide.
+  - Post-voting dashboard banner provides immediate visual confirmation and one-click statement download.
 
 ### 3.8 Automated Class Masterlist Ingestion & Railway Database Synchronization
 - **Masterlist Data Extraction (`Masterlist BSIT31008-IS (1).xlsx`)**:

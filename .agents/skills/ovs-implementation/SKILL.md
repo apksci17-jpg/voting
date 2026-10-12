@@ -173,3 +173,15 @@ The frontend is specifically structured for direct compilation into native iOS a
   - When deployed to Railway (where an existing database already has the `users` table), `autoSyncMasterlistVoters($pdo)` checks the `election_settings.masterlist_voters_synced_v1` flag.
   - If unapplied, it automatically iterates the 53 masterlist records: updating existing records to their verified Gmail addresses and inserting any missing voter rows.
   - Executed automatically at container boot in `entrypoint.sh` via PHP CLI (`php -r "require 'backend/config/database.php'; autoSyncMasterlistVoters(getDbConnection());"`) and lazily during the first database connection.
+
+---
+
+## 9. Contact Phone Number Excision
+
+- **Exclusion of Phone Data**:
+  - The `phone` field has been comprehensively excised from the system architecture.
+  - Client side: `frontend/admin/voters.html` no longer contains phone input fields, data row phone markers, or modal JS assignments.
+  - Server side: `backend/api/admin.php` endpoints (`action=voters`, `action=add_voter`, `action=edit_voter`) do not query, accept, or update phone numbers.
+  - Database & migrations: `backend/config/database.php` automatically performs `ALTER TABLE users DROP COLUMN phone` if present on boot, and `backend/database/*.sql` excludes the column completely.
+  - Masterlist dataset: `backend/includes/voter_masterlist.php` maintains clean voter credentials without phone attributes.
+

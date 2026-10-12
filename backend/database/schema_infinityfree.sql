@@ -26,7 +26,6 @@ CREATE TABLE `users` (
   `role` ENUM('admin', 'voter') NOT NULL DEFAULT 'voter',
   `full_name` VARCHAR(150) NOT NULL,
   `student_id` VARCHAR(50) DEFAULT NULL,
-  `phone` VARCHAR(50) DEFAULT '+63 912 345 6789',
   `date_of_birth` VARCHAR(50) DEFAULT '10/12/2003',
   `grade_level` VARCHAR(50) DEFAULT '3rd Year',
   `section` VARCHAR(50) DEFAULT 'BSIT 31008',

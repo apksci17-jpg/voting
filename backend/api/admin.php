@@ -263,7 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'delete_candidate') {
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'voters') {
     requireApiAdmin();
     $stmt = $pdo->query("
-        SELECT id, username, email, full_name, student_id, has_voted, created_at, phone, date_of_birth, grade_level, section 
+        SELECT id, username, email, full_name, student_id, has_voted, created_at, date_of_birth, grade_level, section 
         FROM users 
         WHERE role = 'voter' 
         ORDER BY has_voted DESC, full_name ASC
@@ -305,7 +305,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'add_voter') {
     if (empty($password)) $password = $studentId;
     $gradeLevel = trim($data['grade_level'] ?? '1st Year');
     $section = trim($data['section'] ?? '');
-    $phone = trim($data['phone'] ?? '');
 
     if (empty($fullName) || empty($studentId)) {
         http_response_code(400);
@@ -324,8 +323,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'add_voter') {
     }
 
     $hash = password_hash($password, PASSWORD_DEFAULT);
-    $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role, full_name, student_id, has_voted, grade_level, section, phone) VALUES (?, ?, ?, 'voter', ?, ?, 0, ?, ?, ?)");
-    $stmt->execute([$username, $email, $hash, $fullName, $studentId, $gradeLevel, $section, $phone]);
+    $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role, full_name, student_id, has_voted, grade_level, section) VALUES (?, ?, ?, 'voter', ?, ?, 0, ?, ?)");
+    $stmt->execute([$username, $email, $hash, $fullName, $studentId, $gradeLevel, $section]);
     $newId = (int)$pdo->lastInsertId();
 
     echo json_encode([
@@ -348,7 +347,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'edit_voter') {
     $email = trim($data['email'] ?? '');
     $gradeLevel = trim($data['grade_level'] ?? '');
     $section = trim($data['section'] ?? '');
-    $phone = trim($data['phone'] ?? '');
     $newPassword = $data['password'] ?? '';
 
     if ($id <= 0 || empty($fullName) || empty($studentId)) {
@@ -379,11 +377,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'edit_voter') {
 
     if (!empty($newPassword)) {
         $hash = password_hash($newPassword, PASSWORD_DEFAULT);
-        $update = $pdo->prepare("UPDATE users SET full_name = ?, student_id = ?, username = ?, email = ?, grade_level = ?, section = ?, phone = ?, password_hash = ? WHERE id = ?");
-        $update->execute([$fullName, $studentId, $username, $email, $gradeLevel, $section, $phone, $hash, $id]);
+        $update = $pdo->prepare("UPDATE users SET full_name = ?, student_id = ?, username = ?, email = ?, grade_level = ?, section = ?, password_hash = ? WHERE id = ?");
+        $update->execute([$fullName, $studentId, $username, $email, $gradeLevel, $section, $hash, $id]);
     } else {
-        $update = $pdo->prepare("UPDATE users SET full_name = ?, student_id = ?, username = ?, email = ?, grade_level = ?, section = ?, phone = ? WHERE id = ?");
-        $update->execute([$fullName, $studentId, $username, $email, $gradeLevel, $section, $phone, $id]);
+        $update = $pdo->prepare("UPDATE users SET full_name = ?, student_id = ?, username = ?, email = ?, grade_level = ?, section = ? WHERE id = ?");
+        $update->execute([$fullName, $studentId, $username, $email, $gradeLevel, $section, $id]);
     }
 
     echo json_encode(['success' => true]);

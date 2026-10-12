@@ -13,8 +13,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199002',
@@ -26,8 +25,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240108957',
@@ -39,8 +37,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199003',
@@ -52,8 +49,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240104785',
@@ -65,8 +61,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240114524',
@@ -78,8 +73,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240104619',
@@ -91,8 +85,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199004',
@@ -104,8 +97,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240111324',
@@ -117,8 +109,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240112382',
@@ -130,8 +121,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240114322',
@@ -143,8 +133,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199005',
@@ -156,8 +145,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240110711',
@@ -169,8 +157,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '250100040',
@@ -182,8 +169,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240114865',
@@ -195,8 +181,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240116136',
@@ -208,8 +193,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199006',
@@ -221,8 +205,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240108641',
@@ -234,8 +217,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240112792',
@@ -247,8 +229,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199007',
@@ -260,8 +241,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240110350',
@@ -273,8 +253,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240102182',
@@ -286,8 +265,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240111136',
@@ -299,8 +277,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240115034',
@@ -312,8 +289,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240104951',
@@ -325,8 +301,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240112280',
@@ -338,8 +313,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199008',
@@ -351,8 +325,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240100999',
@@ -364,8 +337,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199009',
@@ -377,8 +349,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199010',
@@ -390,8 +361,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199011',
@@ -403,8 +373,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199012',
@@ -416,8 +385,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240113524',
@@ -429,8 +397,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240100581',
@@ -442,8 +409,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199013',
@@ -455,8 +421,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199014',
@@ -468,8 +433,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240114837',
@@ -481,8 +445,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240114417',
@@ -494,8 +457,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199015',
@@ -507,8 +469,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240110713',
@@ -520,8 +481,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240109916',
@@ -533,8 +493,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240115320',
@@ -546,8 +505,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240100841',
@@ -559,8 +517,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199016',
@@ -572,8 +529,7 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240113401',
@@ -585,8 +541,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240116149',
@@ -598,8 +553,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240109597',
@@ -611,8 +565,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240109409',
@@ -624,8 +577,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240111848',
@@ -637,8 +589,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240112797',
@@ -650,8 +601,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240104214',
@@ -663,8 +613,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240105182',
@@ -676,8 +625,7 @@ return [
         'has_real_id' => true,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
     [
         'student_id' => '240199017',
@@ -689,7 +637,6 @@ return [
         'has_real_id' => false,
         'grade_level' => '3rd Year',
         'section' => 'BSIT 31008',
-        'date_of_birth' => '2003-10-12',
-        'phone' => '+63 912 345 6789'
+        'date_of_birth' => '2003-10-12'
     ],
 ];

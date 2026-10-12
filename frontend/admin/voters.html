@@ -366,18 +366,11 @@
                     </div>
                 </div>
 
-                <!-- Phone & Password -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-                    <div class="form-group">
-                        <label class="form-label" for="voterPhoneInput">Contact Phone</label>
-                        <input type="tel" id="voterPhoneInput" class="form-input" placeholder="e.g. 09171234567">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="voterPasswordInput" id="voterPasswordLabel">Password</label>
-                        <input type="text" id="voterPasswordInput" class="form-input" placeholder="Defaults to Student ID">
-                        <div id="voterPasswordHelp" style="font-size: 11px; color: #64748b; margin-top: 4px;">Leave empty to keep default (Student ID).</div>
-                    </div>
+                <!-- Password -->
+                <div class="form-group">
+                    <label class="form-label" for="voterPasswordInput" id="voterPasswordLabel">Password</label>
+                    <input type="text" id="voterPasswordInput" class="form-input" placeholder="Defaults to Student ID">
+                    <div id="voterPasswordHelp" style="font-size: 11px; color: #64748b; margin-top: 4px;">Leave empty to keep default (Student ID).</div>
                 </div>
 
                 <!-- Actions -->
@@ -560,7 +553,6 @@
                                                 </td>
                                                 <td data-label="Full Name">
                                                     <div style="font-weight: 800; color: #0f172a;">${escapeHtml(v.full_name)}</div>
-                                                    <div style="font-size: 11px; color: #64748b;">${v.phone ? escapeHtml(v.phone) : 'No phone linked'}</div>
                                                 </td>
                                                 <td data-label="Account">
                                                     <div style="font-weight: 600; color: #334155;">${escapeHtml(v.username)}</div>
@@ -665,7 +657,6 @@
                 document.getElementById('voterEmailInput').dataset.customized = '';
                 document.getElementById('voterGradeSelect').value = '1st Year';
                 document.getElementById('voterSectionInput').value = '';
-                document.getElementById('voterPhoneInput').value = '';
                 document.getElementById('voterPasswordInput').value = '';
                 document.getElementById('voterPasswordLabel').innerText = 'Default Password';
                 document.getElementById('voterPasswordHelp').innerText = 'Leave empty to set password equal to Student ID.';
@@ -689,7 +680,6 @@
                 document.getElementById('voterEmailInput').dataset.customized = '1';
                 document.getElementById('voterGradeSelect').value = voter.grade_level || '1st Year';
                 document.getElementById('voterSectionInput').value = voter.section || '';
-                document.getElementById('voterPhoneInput').value = voter.phone || '';
                 document.getElementById('voterPasswordInput').value = '';
                 document.getElementById('voterPasswordLabel').innerText = 'Change Password (Optional)';
                 document.getElementById('voterPasswordHelp').innerText = 'Leave empty to keep existing password unchanged.';
@@ -726,7 +716,6 @@
                 const email = document.getElementById('voterEmailInput').value.trim();
                 const grade_level = document.getElementById('voterGradeSelect').value;
                 const section = document.getElementById('voterSectionInput').value.trim();
-                const phone = document.getElementById('voterPhoneInput').value.trim();
                 const password = document.getElementById('voterPasswordInput').value;
 
                 if (!student_id || !full_name) {
@@ -740,8 +729,7 @@
                     username,
                     email,
                     grade_level,
-                    section,
-                    phone
+                    section
                 };
                 if (password) {
                     payload.password = password;

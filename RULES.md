@@ -48,6 +48,10 @@ Never silently introduce undocumented business rules such as:
 
 If the existing code already implements a rule, preserve it unless the user explicitly asks for a change.
 
+### Rule 2.4 — Account Attribute Integrity & Contact Number Decommissioning
+- User and administrator accounts consist of Student ID/Username, Full Name, Email, Role, Academic Year Level, Section, and Authentication Credentials.
+- Contact phone numbers (`phone`) have been decommissioned across the entire system. Never re-introduce `phone` fields to forms, database schemas, or API endpoints.
+
 ---
 
 ## 3. Architecture & Authentication Rules

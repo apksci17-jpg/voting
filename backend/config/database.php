@@ -61,14 +61,13 @@ function autoSyncMasterlistVoters($pdo) {
 
         $findStmt = $pdo->prepare("SELECT id, username, student_id, email, full_name FROM users WHERE student_id = ? OR email = ? LIMIT 1");
         $updateEmailStmt = $pdo->prepare("UPDATE users SET email = ?, full_name = ? WHERE id = ?");
-        $insertStmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role, full_name, student_id, has_voted, phone, date_of_birth, grade_level, section) VALUES (?, ?, ?, 'voter', ?, ?, 0, ?, ?, ?, ?)");
+        $insertStmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role, full_name, student_id, has_voted, date_of_birth, grade_level, section) VALUES (?, ?, ?, 'voter', ?, ?, 0, ?, ?, ?)");
 
         foreach ($masterlist as $voter) {
             $studentId = trim($voter['student_id']);
             $email = trim($voter['email']);
             $fullName = trim($voter['full_name']);
             $hash = $voter['password_hash'];
-            $phone = $voter['phone'] ?? '+63 912 345 6789';
             $dob = $voter['date_of_birth'] ?? '2003-10-12';
             $grade = $voter['grade_level'] ?? '3rd Year';
             $section = $voter['section'] ?? 'BSIT 31008';
@@ -84,7 +83,7 @@ function autoSyncMasterlistVoters($pdo) {
             } else {
                 // Insert new voter
                 $username = $studentId;
-                $insertStmt->execute([$username, $email, $hash, $fullName, $studentId, $phone, $dob, $grade, $section]);
+                $insertStmt->execute([$username, $email, $hash, $fullName, $studentId, $dob, $grade, $section]);
             }
         }
 
@@ -128,6 +127,16 @@ function getDBConnection() {
                 if ($colCheck && $colCheck->rowCount() === 0) {
                     $pdo->exec("ALTER TABLE users ADD COLUMN `login_otp` VARCHAR(10) DEFAULT NULL, ADD COLUMN `login_otp_expires_at` DATETIME DEFAULT NULL");
                 }
+            }
+
+            // Ensure phone column is dropped from users table if present
+            try {
+                $phoneCheck = $pdo->query("SHOW COLUMNS FROM users LIKE 'phone'");
+                if ($phoneCheck && $phoneCheck->rowCount() > 0) {
+                    $pdo->exec("ALTER TABLE users DROP COLUMN `phone`");
+                }
+            } catch (Exception $dropPhoneEx) {
+                // Ignore if already dropped or restricted
             }
 
             // Auto-synchronize masterlist voters from Excel to database

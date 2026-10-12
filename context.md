@@ -172,9 +172,9 @@ This document maintains a comprehensive record of all changes, features, archite
   - **Add Candidate (`action=add_candidate`)**: Validates nominee name and position ID. Accepts base64 image data (`profile_image_base64`), decodes and saves uniquely into `frontend/assets/uploads/`, and persists candidate with year level and campaign platform into `candidates`.
   - **Edit Candidate (`action=edit_candidate`)**: Updates existing nominee records, handles position re-assignment, platform edits, and optional new profile photo replacement.
   - **Delete Candidate (`action=delete_candidate`)**: Permanently removes candidate from the election ballot.
-  - **Voter Roster & Metrics (`action=voters`)**: Returns complete student voter roster with voting status, phone, grade level, and section, alongside live aggregate turnout metrics (`total`, `voted`, `pending`, `turnout_pct`).
+  - **Voter Roster & Metrics (`action=voters`)**: Returns complete student voter roster with voting status, grade level, and section, alongside live aggregate turnout metrics (`total`, `voted`, `pending`, `turnout_pct`).
   - **Add Voter (`action=add_voter`)**: Enforces uniqueness of Student ID, username, and email. Hashes passwords using `password_hash(PASSWORD_DEFAULT)`. Defaults credentials to Student ID if unspecified.
-  - **Edit Voter (`action=edit_voter`)**: Updates voter metadata, student ID, contact details, grade level, and section with duplicate conflict checks and optional password re-hashing.
+  - **Edit Voter (`action=edit_voter`)**: Updates voter metadata, student ID, grade level, and section with duplicate conflict checks and optional password re-hashing.
   - **Delete Voter (`action=delete_voter`)**: Safely removes voter accounts and cascade-deletes associated ballot records within an atomic database transaction.
   - **Reset Voter Ballot (`action=reset_voter_ballot`)**: Allows administrators to clear an individual voter's cast ballot (`DELETE FROM votes WHERE voter_id = ?; UPDATE users SET has_voted = 0`) within an atomic transaction so the student can recast their vote.
 - **Frontend Candidate Management UI (`frontend/admin/candidates.html`)**:
@@ -443,6 +443,37 @@ c:/xampp/htdocs/voting/
   - Replaced legacy teal grid vector in `res/drawable/ic_launcher_background.xml` with solid `#EDF3FF` vector.
   - Purged obsolete default Android robot vector in `res/drawable-v24/ic_launcher_foreground.xml`.
   - Fully verified compilation and AAPT2 packaging via `gradlew.bat assembleDebug` (153 actionable tasks passed).
+
+---
+
+### U. Complete Removal of Contact Numbers Across Student and Admin Accounts
+- **Stakeholder Directive**: Completely remove the contact number (`phone` field) from student/voter accounts and also for administrator accounts across both frontend and backend.
+- **Frontend Admin Voter Management Interface (`frontend/admin/voters.html`)**:
+  - Removed contact phone form input (`#voterPhoneInput`) and converted the modal layout to a clean single-column password input card.
+  - Removed secondary phone text display (`${v.phone ? ... : 'No phone linked'}`) from voter directory table rows beneath Full Name.
+  - Purged `voterPhoneInput` reset handling in `openAddVoterModal()`.
+  - Purged `voterPhoneInput` prefill in `openEditVoterModal()`.
+  - Removed `phone` extraction and payload transmission from `submitVoterForm()`.
+- **Backend Administrative REST API Endpoints (`backend/api/admin.php`)**:
+  - `action=voters`: Removed `phone` column from the `SELECT` query.
+  - `action=add_voter`: Removed `$phone` sanitization and eliminated `phone` from `INSERT INTO users` column and parameter bindings.
+  - `action=edit_voter`: Removed `$phone` sanitization and eliminated `phone` from `UPDATE users` column and parameter bindings.
+- **Automated Cloud & Local Database Migration (`backend/config/database.php`)**:
+  - Injected an automatic, non-destructive migration check into `getDBConnection()`:
+    ```php
+    try {
+        $phoneCheck = $pdo->query("SHOW COLUMNS FROM users LIKE 'phone'");
+        if ($phoneCheck && $phoneCheck->rowCount() > 0) {
+            $pdo->exec("ALTER TABLE users DROP COLUMN `phone`");
+        }
+    } catch (Exception $dropPhoneEx) { /* safe fallback */ }
+    ```
+  - This guarantees that deployed Railway cloud database instances and local environments automatically drop the `phone` column on startup without requiring manual SQL commands.
+  - Removed `phone` insertion from `autoSyncMasterlistVoters($pdo)`.
+- **Authoritative Masterlist Dataset (`backend/includes/voter_masterlist.php`)**:
+  - Stripped all 53 occurrences of `'phone' => '+63 912 345 6789'` across all student entries.
+- **Database Schemas & Seed SQL Dumps (`backend/database/`)**:
+  - Purged `phone` column definition and values from `schema.sql`, `voting_db_import.sql`, and `schema_infinityfree.sql`.
 
 ---
 

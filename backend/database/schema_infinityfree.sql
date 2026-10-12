@@ -123,7 +123,7 @@ INSERT INTO `candidates` (`id`, `position_id`, `candidate_name`, `year_level`, `
 -- Dumping data for table `users` (Admin + 31 Registered Voters)
 -- --------------------------------------------------------
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `role`, `full_name`, `student_id`, `has_voted`) VALUES
-(1, 'admin', 'admin@tomorrowvote.com', '$2y$10$wBx.kT0DfIpigZJA4pXNB.ho3YqozHqOjCwn/4ZqS7d0dM8pv712S', 'admin', 'Admin', 'ADM-2026', 0),
+(1, 'admin', 'cassandramherranola@gmail.com', '$2y$10$wBx.kT0DfIpigZJA4pXNB.ho3YqozHqOjCwn/4ZqS7d0dM8pv712S', 'admin', 'Admin', 'ADM-2026', 0),
 (4, '240104785', '240104785@student.bcp.edu.ph', '$2y$10$AiVCpZ2c5DyR4Lr0WxsRTOpa2.H/ZZqGUfT.DNu.UqVwoSoN.FyO6', 'voter', 'Alvarez, Moises Ker C', '240104785', 1),
 (5, '240114524', '240114524@student.bcp.edu.ph', '$2y$10$Pg8pL/V61mvw7GWDvRckI.gB53W0Q6AIAyWXl.DvUxXIzrkaSaasO', 'voter', 'Antonio, Jose Miguel P.', '240114524', 0),
 (6, '240104619', '240104619@student.bcp.edu.ph', '$2y$10$yXTWaOrDdm/lu4virSDLku6ZvsXBHy3NKbxhWaD2ZKlLoHxDlud4i', 'voter', 'Avingona, Gabriel Joshua', '240104619', 0),

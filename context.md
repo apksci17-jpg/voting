@@ -487,15 +487,18 @@ c:/xampp/htdocs/voting/
 - **Administrative Email Dispatch & High-Privilege Template (`backend/includes/mailer.php`)**:
   - Implemented `sendAdminLoginOtp($recipientEmail, $recipientName, $otpCode)` routing through HTTPS Webhook relay, Brevo REST API, or multi-port SMTP failover.
   - Designed `buildAdminOtpEmailHtml()` featuring navy/gold administrative security branding, high-visibility 40px monospace authorization code, and critical tamper warnings.
-- **Dynamic Cloud Environment Variable Forwarding (`backend/config/database.php`)**:
-  - Injected runtime synchronization for `ADMIN_EMAIL` environment variable:
+- **Administrator Email Configuration & Automatic Synchronization (`backend/config/database.php`)**:
+  - Configured the default administrator email to `cassandramherranola@gmail.com` across database seed files (`schema.sql`, `voting_db_import.sql`, `setup.php`, `voting_db.sql`) and injected automatic database synchronization:
     ```php
+    $targetAdminEmail = 'cassandramherranola@gmail.com';
     $adminEnvEmail = getenv('ADMIN_EMAIL') ?: ($_ENV['ADMIN_EMAIL'] ?? null);
-    if ($adminEnvEmail && filter_var($adminEnvEmail, FILTER_VALIDATE_EMAIL)) {
-        $pdo->prepare("UPDATE users SET email = ? WHERE role = 'admin' AND email != ?")->execute([$adminEnvEmail, $adminEnvEmail]);
+    if ($adminEnvEmail && filter_var(trim($adminEnvEmail), FILTER_VALIDATE_EMAIL)) {
+        $targetAdminEmail = trim($adminEnvEmail);
     }
+    $pdo->prepare("UPDATE users SET email = ? WHERE (role = 'admin' OR username = 'admin') AND email != ?")->execute([$targetAdminEmail, $targetAdminEmail]);
     ```
-  - Enables election officials to set their real personal or institutional email directly in Railway cloud variables without touching code.
+  - Dropped unique constraints on the `email` column in `users` to permit shared institutional contacts (such as an administrator holding both an administrative identity and a student voter profile) without SQL collision, and updated `backend/api/auth.php` with password-based credential disambiguation.
+  - Automatically aligns the database email on container startup and requests across Railway and local instances.
 - **Frontend Adaptive Modal UI & Navigation (`frontend/login.html`)**:
   - Dynamically switches header title ("Administrator 2FA Security Authorization"), banner text, and button label ("Authorize & Enter Console") when an administrative login is in progress.
   - Corrected post-verification redirection: redirects administrators to `admin/dashboard.html` and voters to `voter/dashboard.html`.

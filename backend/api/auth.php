@@ -37,17 +37,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'login') {
         exit;
     }
 
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? OR student_id = ? OR email = ? LIMIT 1");
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? OR student_id = ? OR email = ? ORDER BY (role = 'admin') DESC, id ASC");
     $stmt->execute([$username, $username, $username]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    $candidates = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $user = null;
     $isPasswordValid = false;
-    if ($user) {
-        if (password_verify($password, $user['password_hash'])) {
+    foreach ($candidates as $cand) {
+        if (password_verify($password, $cand['password_hash'])) {
+            $user = $cand;
             $isPasswordValid = true;
-        } elseif (!empty($user['student_id']) && $password === $user['student_id']) {
+            break;
+        } elseif (!empty($cand['student_id']) && $password === $cand['student_id']) {
+            $user = $cand;
             $isPasswordValid = true;
+            break;
         }
+    }
+    if (!$user && !empty($candidates)) {
+        $user = $candidates[0];
     }
 
     if ($user && $isPasswordValid) {

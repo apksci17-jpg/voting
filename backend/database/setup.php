@@ -18,13 +18,13 @@ try {
     // Explicitly update default user hashes to guarantee login success
     $adminHash = password_hash('admin123', PASSWORD_DEFAULT);
     $voterHash = password_hash('voter123', PASSWORD_DEFAULT);
-    $pdo->prepare("UPDATE users SET password_hash = ? WHERE username = 'admin' OR email = 'admin@tomorrowvote.com'")->execute([$adminHash]);
+    $pdo->prepare("UPDATE users SET password_hash = ? WHERE username = 'admin' OR email = 'cassandramherranola@gmail.com'")->execute([$adminHash]);
     $pdo->prepare("UPDATE users SET password_hash = ? WHERE role = 'voter'")->execute([$voterHash]);
 
     echo "<p style='color: green; font-weight: bold;'>✔ Database 'voting_db' and tables initialized successfully!</p>";
     echo "<h3>Default Accounts:</h3>";
     echo "<ul>";
-    echo "<li><strong>Admin:</strong> Email: <code>admin@tomorrowvote.com</code> | Password: <code>admin123</code></li>";
+    echo "<li><strong>Admin:</strong> Email: <code>cassandramherranola@gmail.com</code> | Password: <code>admin123</code></li>";
     echo "<li><strong>Voter:</strong> Email: <code>voter1@tomorrowvote.com</code> | Password: <code>voter123</code></li>";
     echo "</ul>";
     echo "<p><a href='../login.php'>Go to Login Screen</a></p>";

@@ -17,7 +17,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 CREATE TABLE `users` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `username` VARCHAR(100) NOT NULL UNIQUE,
-  `email` VARCHAR(150) NOT NULL UNIQUE,
+  `email` VARCHAR(150) NOT NULL,
   `password_hash` VARCHAR(255) NOT NULL,
   `role` ENUM('admin', 'voter') NOT NULL DEFAULT 'voter',
   `full_name` VARCHAR(150) NOT NULL,
@@ -119,7 +119,7 @@ INSERT INTO `election_settings` (`id`, `setting_key`, `setting_value`) VALUES
 -- Dumping data for table `users`
 -- --------------------------------------------------------
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `role`, `full_name`, `student_id`, `has_voted`, `date_of_birth`, `grade_level`, `section`) VALUES
-(1, 'admin', 'admin@tomorrowvote.com', '$2y$10$wBx.kT0DfIpigZJA4pXNB.ho3YqozHqOjCwn/4ZqS7d0dM8pv712S', 'admin', 'Admin', 'ADM-2026', 0, '2003-10-12', '3rd Year', 'BSIT 31008'),
+(1, 'admin', 'cassandramherranola@gmail.com', '$2y$10$wBx.kT0DfIpigZJA4pXNB.ho3YqozHqOjCwn/4ZqS7d0dM8pv712S', 'admin', 'Admin', 'ADM-2026', 0, '2003-10-12', '3rd Year', 'BSIT 31008'),
 (4, '240199001', 'jhencel.abarracoso@student.bcp.edu.ph', '$2y$10$Qi6GeMDWejRCbwLeeXHbZO0bxE/3fz4t5.gYpXXTwitk93g/nAgDK', 'voter', 'Abarracoso, Jhencel T.', '240199001', 0, '2003-10-12', '3rd Year', 'BSIT 31008'),
 (5, '240199002', 'julius.agang@student.bcp.edu.ph', '$2y$10$Mq5s/NucinxHoXlCpOwvk.IELB7Y9jjfq2jVkc5DY1ZGO24ljOVyi', 'voter', 'Agang, Julius O.', '240199002', 0, '2003-10-12', '3rd Year', 'BSIT 31008'),
 (6, '240108957', 'jesuskylefedilo@gmail.com', '$2y$10$Wnog3e8U9q6Xl9iyfNgVNOE0nGO.dzMMnFkCAkt04igm9K/gDP1FG', 'voter', 'Albos, Jesus Kyle F.', '240108957', 0, '2003-10-12', '3rd Year', 'BSIT 31008'),

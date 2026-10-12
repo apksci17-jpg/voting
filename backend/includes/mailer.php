@@ -134,6 +134,8 @@ function sendViaHttpsWebhook($webhookUrl, $recipientEmail, $recipientName, $subj
     $payload = json_encode([
         'to' => $recipientEmail,
         'name' => $recipientName,
+        'from_name' => SMTP_FROM_NAME,
+        'from_email' => SMTP_FROM_EMAIL,
         'subject' => $subject,
         'html' => $htmlBody,
         'otp' => $otpCode,
@@ -637,6 +639,8 @@ function sendViaHttpsWebhookWithAttachment($webhookUrl, $recipientEmail, $recipi
     $payload = json_encode([
         'to' => $recipientEmail,
         'name' => $recipientName,
+        'from_name' => SMTP_FROM_NAME,
+        'from_email' => SMTP_FROM_EMAIL,
         'subject' => $subject,
         'html' => $htmlBody,
         'student_id' => $studentId,
@@ -761,9 +765,9 @@ function sendBallotReceiptViaSmtp($recipientEmail, $recipientName, $subject, $ht
                 ]
             ];
 
-            $mail->setFrom(SMTP_FROM_EMAIL, 'Bestlink College of the Philippines — Electronic Statements');
+            $mail->setFrom(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
             $mail->addAddress($recipientEmail, $recipientName);
-            $mail->addReplyTo(SMTP_FROM_EMAIL, 'Bestlink College of the Philippines — Electronic Statements');
+            $mail->addReplyTo(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
 
             // Attach password-protected PDF directly from memory with explicit attachment disposition
             $mail->addStringAttachment($pdfBinaryContent, $pdfFilename, 'base64', 'application/pdf', 'attachment');

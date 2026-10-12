@@ -563,6 +563,23 @@ c:/xampp/htdocs/voting/
 
 ---
 
+### Y. Unified Outbound Sender Branding ("Tomorrow Vote") Across All Dispatchers
+- **Stakeholder Directive**: Analyze the email sending functions across the system and ensure the sender email name is changed from "me" into "Tomorrow Vote" ("Tomorrow Vote").
+- **Backend Configuration Alignment (`backend/config/mail.php`)**:
+  - Updated default `SMTP_FROM_NAME` constant definition from `'Tomorrow Vote Verification'` to `'Tomorrow Vote'`:
+    `define('SMTP_FROM_NAME', getenv('SMTP_FROM_NAME') ?: 'Tomorrow Vote');`
+- **Mailer Dispatch Engine Hardening (`backend/includes/mailer.php`)**:
+  - **Ballot E-Statement Dispatcher (`sendBallotReceiptViaSmtp`)**: Replaced legacy hardcoded sender string `'Bestlink College of the Philippines — Electronic Statements'` in `$mail->setFrom()` and `$mail->addReplyTo()` with the standardized `SMTP_FROM_NAME` constant.
+  - **HTTPS Webhook Relays (`sendViaHttpsWebhook` & `sendViaHttpsWebhookWithAttachment`)**: Injected `'from_name' => SMTP_FROM_NAME` and `'from_email' => SMTP_FROM_EMAIL` into the outbound JSON payload dispatched to external Google Apps Script or cloud webhook endpoints.
+  - **Brevo API & Standard SMTP Engines**: Verified that `sendViaBrevo()`, `sendViaBrevoWithAttachment()`, and `sendViaSmtp()` already explicitly pass `SMTP_FROM_NAME` in sender object definitions.
+- **Email Threading & Self-Sent Display Behavior Analysis**:
+  - Analyzed why Gmail web and mobile clients display "me" (or "ako") when testing from `cassandramherranola@gmail.com`:
+    - When an email's sender address matches the currently signed-in Google account (e.g. testing admin OTP or student #40), Gmail overrides the `From:` display name in thread listings and renders "me" to indicate self-dispatch.
+    - For all other student recipients (e.g. `moiseskeralavarez@gmail.com`, etc.), mail clients respect the `From: Tomorrow Vote <cassandramherranola@gmail.com>` header and display "Tomorrow Vote".
+    - Provided institutional instructions for configuring Gmail's "Send mail as" display name in Settings -> Accounts and Import -> Edit info.
+
+---
+
 ## 4. Key Operating Principles & Constraints
 1. **Headless Discipline**: PHP files reside strictly in `backend/` and output JSON or PDF documents. All HTML rendering is performed by the `frontend/` static client.
 2. **Capacitor Mobile Ready**: All asset and API paths resolve dynamically. State is managed via `localStorage` and `sessionStorage`.
@@ -572,6 +589,7 @@ c:/xampp/htdocs/voting/
 6. **E-Statement Security & Confidentiality**: Ballot receipts sent via email must always be password-protected with the student's unique credentials. Voting commitments must never be aborted if an external mail service experiences latency or network timeouts.
 7. **Masterlist Synchronization**: The system automatically aligns the voter database with the authoritative class masterlist on startup and cloud deployment, ensuring all voters have their verified email addresses for 2FA OTP delivery.
 8. **Native Android Multi-Density Icons**: All launcher icons must provide full adaptive (108dp canvas with 72dp safe zone) and legacy (mdpi through xxxhdpi) sets to guarantee pixel-perfect rendering across all Android devices and OEM launchers.
+9. **Outbound Email Sender Identity**: All system-generated emails (Voter OTP, Admin OTP, Lockout Alerts, and Ballot e-Statements) must strictly dispatch under the institutional brand "Tomorrow Vote" across all SMTP and HTTPS relay pathways.
 
 
 

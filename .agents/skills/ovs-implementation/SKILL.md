@@ -184,3 +184,17 @@ The frontend is specifically structured for direct compilation into native iOS a
   - Database & migrations: `backend/config/database.php` automatically performs `ALTER TABLE users DROP COLUMN phone` if present on boot, and `backend/database/*.sql` excludes the column completely.
   - Masterlist dataset: `backend/includes/voter_masterlist.php` maintains clean voter credentials without phone attributes.
 
+---
+
+## 10. Outbound Email Sender Branding ("Tomorrow Vote")
+
+- **Standard Sender Configuration (`backend/config/mail.php`)**:
+  - `SMTP_FROM_NAME` is defined as `'Tomorrow Vote'` (falling back to environment variable if provided).
+  - All outbound dispatchers in `backend/includes/mailer.php` (Voter OTP, Admin OTP, Lockout Alerts, and Ballot e-Statements) strictly use `SMTP_FROM_NAME`.
+- **Relay Payload Protocol**:
+  - Both standard and attachment HTTPS Webhook relays (`sendViaHttpsWebhook`, `sendViaHttpsWebhookWithAttachment`) pass `'from_name' => SMTP_FROM_NAME` and `'from_email' => SMTP_FROM_EMAIL`.
+  - Brevo API and multi-port PHPMailer engines (465 SSL / 587 STARTTLS) explicitly set From and Reply-To headers using `SMTP_FROM_NAME`.
+- **Gmail Recipient Display Behavior**:
+  - Sending to the same address as the sender (e.g., self-dispatching during admin OTP testing to `cassandramherranola@gmail.com`) causes Gmail to display "me" in the user's thread view. All other recipients see "Tomorrow Vote".
+
+

@@ -9,7 +9,7 @@ define('SMTP_USER', getenv('SMTP_USER') ?: 'cassandramherranola@gmail.com');
 // Google App Password for cassandramherranola@gmail.com
 define('SMTP_PASS', getenv('SMTP_PASS') ?: 'yjjicbalkrprszcr');
 define('SMTP_FROM_EMAIL', getenv('SMTP_FROM_EMAIL') ?: 'cassandramherranola@gmail.com');
-define('SMTP_FROM_NAME', getenv('SMTP_FROM_NAME') ?: 'Tomorrow Vote Verification');
+define('SMTP_FROM_NAME', getenv('SMTP_FROM_NAME') ?: 'Tomorrow Vote');
 
 // HTTPS Mail Delivery Options (Operates over unrestricted Port 443 to bypass cloud PaaS SMTP blocking)
 // 1. Google Apps Script Web App or custom HTTPS webhook:

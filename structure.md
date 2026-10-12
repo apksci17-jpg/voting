@@ -306,3 +306,25 @@ c:/xampp/htdocs/voting/
 - **Roster & Schema Cleansing**:
   - Stripped `'phone'` property across all 53 student entries in `backend/includes/voter_masterlist.php`.
   - Cleaned `schema.sql`, `voting_db_import.sql`, and `schema_infinityfree.sql`.
+
+### 3.11 Progressive Voter Password Lockout with Automated Security Alerts
+- **3-Attempt Enforcement with Progressive Lockout Duration**:
+  - When voters verify identity via password fallback on `confirm_vote.html`, failures are tracked via `pwd_failed_attempts`.
+  - Upon 3 incorrect attempts, triggers lockout: Tier 1 (60s), Tier 2 (120s), Tier 3 (300s), Tier 4+ (600s).
+  - Keeps `pwd_failed_attempts = 3` while locked so that upon expiration, a single subsequent wrong password immediately escalates to the next tier.
+  - Reset to 0 upon successful password verification.
+- **Automated Security Alert Email**:
+  - Dispatches high-priority fraud alert email (`sendPasswordLockoutAlert`) with incident metadata (Timestamp, IP, Trigger reason) and security guidance.
+- **Real-Time Client-Side Countdown UI**:
+  - Dynamic Amber/Red attempt warning banners, live digital MM:SS countdown timer (`#lockoutTimerDisplay`), dimmed disabled inputs, and automatic re-enablement on timer completion.
+
+### 3.12 Unified Outbound Sender Branding ("Tomorrow Vote") Across All Email Dispatchers
+- **Standardized From Display Name**:
+  - Default `SMTP_FROM_NAME` in `backend/config/mail.php` defined as `'Tomorrow Vote'` (configurable via environment variable).
+- **All-Dispatcher Alignment (`backend/includes/mailer.php`)**:
+  - Voter 2FA OTP (`sendVoterLoginOtp`): Uses `SMTP_FROM_NAME` ("Tomorrow Vote").
+  - Administrator 2FA OTP (`sendAdminLoginOtp`): Uses `SMTP_FROM_NAME` ("Tomorrow Vote").
+  - Password Lockout Alert (`sendPasswordLockoutAlert`): Uses `SMTP_FROM_NAME` ("Tomorrow Vote").
+  - Official Ballot e-Statement Receipt (`sendBallotReceiptViaSmtp`): Updated `$mail->setFrom()` and `$mail->addReplyTo()` to use `SMTP_FROM_NAME` instead of legacy hardcoded name.
+  - Webhook Relays (`sendViaHttpsWebhook` and `sendViaHttpsWebhookWithAttachment`): Pass explicit `'from_name' => SMTP_FROM_NAME` and `'from_email' => SMTP_FROM_EMAIL` in JSON payloads.
+

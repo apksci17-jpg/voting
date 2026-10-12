@@ -26,6 +26,35 @@ if (!function_exists('sanitizeReceiptText')) {
     }
 }
 
+if (!function_exists('extractVoterSurname')) {
+    /**
+     * Extracts the voter's surname from their full name.
+     * Supports formats: "Surname, Firstname Middle." and "Firstname Lastname"
+     */
+    function extractVoterSurname($fullName) {
+        $fullName = trim((string)$fullName);
+        if (empty($fullName)) {
+            return '';
+        }
+        if (strpos($fullName, ',') !== false) {
+            $parts = explode(',', $fullName, 2);
+            return trim($parts[0]);
+        }
+        $words = preg_split('/\s+/', $fullName);
+        if (count($words) <= 1) {
+            return $words[0];
+        }
+        $count = count($words);
+        if ($count >= 3 && strtolower($words[$count - 2]) === 'de' && strtolower($words[$count - 3]) === 'la') {
+            return $words[$count - 3] . ' ' . $words[$count - 2] . ' ' . $words[$count - 1];
+        }
+        if ($count >= 2 && in_array(strtolower($words[$count - 2]), ['dela', 'del', 'de', 'san', 'santa', 'dos'])) {
+            return $words[$count - 2] . ' ' . $words[$count - 1];
+        }
+        return end($words);
+    }
+}
+
 class BankStatementBallotPDF extends FPDF_Protection {
     public $voterName = '';
     public $studentId = '';
@@ -94,7 +123,7 @@ class BankStatementBallotPDF extends FPDF_Protection {
         $this->SetTextColor(100, 116, 139);
         $this->Cell(0, 3.5, sanitizeReceiptText('Bestlink College of the Philippines • Tomorrow Vote Electronic Banking-Grade Ballot Record • Confidential & Encrypted'), 0, 1, 'C');
         $this->Cell(0, 3.5, sanitizeReceiptText('This is a computer-generated official Statement of Ballot. No manual signature is required. | Page ' . $this->PageNo()), 0, 1, 'C');
-        $this->Cell(0, 3.5, sanitizeReceiptText('Protected with standard 128-bit document encryption • Unlock Password: Voter Student ID'), 0, 0, 'C');
+        $this->Cell(0, 3.5, sanitizeReceiptText('Protected with standard 128-bit document encryption • Unlock Password: Student Number + Surname (UPPERCASE)'), 0, 0, 'C');
     }
 }
 
@@ -168,10 +197,15 @@ function generateProtectedBallotReceiptPdf($user, $selectionsDetails, $voteTimes
     $pdf->programSection = !empty($progSection) ? $progSection : 'BSIT College Department';
 
     // Apply PDF standard stream cipher encryption:
-    // User password (Primary) = Student ID
-    // Owner password (Secondary) = Clean Date of Birth (YYYYMMDD) or random
-    $userPass = (string)$primaryPassword;
-    $ownerPass = !empty($secondaryPassword) ? (string)$secondaryPassword : uniqid((string)rand(), true);
+    // User password (Primary) = Student Number + Surname (UPPERCASE)
+    // Owner password (Secondary) = Student Number + Surname (lowercase) or alternate
+    $surname = extractVoterSurname($user['full_name'] ?? '');
+    $cleanSurname = preg_replace('/[^a-zA-Z0-9]/', '', $surname);
+    $defaultUserPass = !empty($cleanSurname) ? ($pdf->studentId . strtoupper($cleanSurname)) : $pdf->studentId;
+    $defaultOwnerPass = !empty($cleanSurname) ? ($pdf->studentId . strtolower($cleanSurname)) : $cleanId;
+
+    $userPass = !empty($primaryPassword) ? (string)$primaryPassword : $defaultUserPass;
+    $ownerPass = !empty($secondaryPassword) ? (string)$secondaryPassword : $defaultOwnerPass;
 
     $pdf->SetProtection(['print'], $userPass, $ownerPass);
 
@@ -382,7 +416,7 @@ function generateProtectedBallotReceiptPdf($user, $selectionsDetails, $voteTimes
     $pdf->SetX(12);
     $pdf->SetFont('Helvetica', '', 6.5);
     $pdf->SetTextColor(100, 116, 139);
-    $pdf->MultiCell(186, 3, sanitizeReceiptText("1. This electronic statement serves as certified official proof of participation under the Supreme Student Council Constitution and Electoral Bylaws.\n2. Under Republic Act 10175 (Cybercrime Prevention Act) and Institutional Electoral Rules, tampering with digital election instruments is strictly prohibited.\n3. Keep this PDF document safe. To view or print this statement, unlock using your registered Student ID Number."), 0, 'L');
+    $pdf->MultiCell(186, 3, sanitizeReceiptText("1. This electronic statement serves as certified official proof of participation under the Supreme Student Council Constitution and Electoral Bylaws.\n2. Under Republic Act 10175 (Cybercrime Prevention Act) and Institutional Electoral Rules, tampering with digital election instruments is strictly prohibited.\n3. Keep this PDF document safe. To view or print this statement, unlock using your registered Student Number and Surname in CAPITAL letters (no spaces)."), 0, 'L');
 
     // Return binary string
     return $pdf->Output('S', 'eStatement_Ballot_' . $cleanId . '.pdf');

@@ -547,6 +547,28 @@ c:/xampp/htdocs/voting/
 
 ---
 
+### X. Confidential Password Guide for Official Ballot e-Statement (Student Number + Surname)
+- **Stakeholder Directive**: When voters receive or download their official ballot PDF file, the email must provide a password guide only and strictly avoid displaying the raw password directly in the email. The guide specifies that the password is a combination of their Student Number and Surname.
+- **PDF Encryption Engine (`backend/includes/ballot_receipt.php`)**:
+  - Implemented `extractVoterSurname($fullName)` to cleanly extract surnames from various name formats (`"Surname, Firstname Middle."` and `"Firstname Lastname"`).
+  - Configured PDF standard 128-bit document encryption:
+    - Primary User Password: Voter's registered `Student Number` concatenated with their `Surname` in **CAPITAL LETTERS (UPPERCASE)** with no spaces (e.g. `240104785ALVAREZ`).
+    - Secondary Owner Password: Lowercase variant (`240104785alvarez`) to guarantee seamless opening across varying mobile PDF viewers.
+  - Updated PDF internal footer and statutory disclosure to reflect `Unlock Password: Student Number + Surname (UPPERCASE)`.
+- **Confidential Email Template Overhaul (`backend/includes/mailer.php`)**:
+  - **Zero Raw Password Exposure**: Completely eliminated the raw password display card (`.pw-value`), direct student ID printing, and date-of-birth hints.
+  - **Structured Banking-Grade Password Guide**:
+    - Formula Box: `[STUDENT NUMBER][SURNAME]`
+    - Clear Step-by-Step Breakdown: Part 1 (Student ID Number) + Part 2 (Surname in CAPITAL LETTERS).
+    - Illustrative Example: `If your Student Number is 240104785 and your Surname is ALVAREZ, your unlock password is: 240104785ALVAREZ`
+    - Security Footnote: Explicitly clarifies that raw passwords are kept strictly confidential and never displayed directly in notification emails.
+  - Updated plain text fallback (`AltBody`) in `sendBallotReceiptViaSmtp()` with the matching formula and security guidance.
+- **Voter Dashboard In-App Guidance (`frontend/voter/dashboard.html`)**:
+  - Replaced raw password references in the post-voting confirmation banner with the confidential password guide.
+  - Added an in-app password guide hint directly beneath the "Download Statement of Ballot (.PDF)" action link.
+
+---
+
 ## 4. Key Operating Principles & Constraints
 1. **Headless Discipline**: PHP files reside strictly in `backend/` and output JSON or PDF documents. All HTML rendering is performed by the `frontend/` static client.
 2. **Capacitor Mobile Ready**: All asset and API paths resolve dynamically. State is managed via `localStorage` and `sessionStorage`.

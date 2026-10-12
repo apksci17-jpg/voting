@@ -88,8 +88,8 @@
                                     <div style="flex: 1;">
                                         <h3 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 800; color: #14532d;">Official Ballot Successfully Cast!</h3>
                                         <p style="margin: 0 0 12px 0; font-size: 13px; color: #166534; line-height: 1.5;">
-                                            A certified, password-protected Electronic Statement of Ballot has been sent to <strong>${email}</strong>.<br>
-                                            To open and view your attached PDF statement, use your <strong>Student ID</strong> (<code>${studentId}</code>) as the unlock password.
+                                            A certified, password-protected Electronic Statement of Ballot has been dispatched to <strong>${email}</strong>.<br>
+                                            <strong>Password Guide:</strong> To open your attached PDF statement, use your <strong>Student Number + Surname in CAPITAL LETTERS</strong> (e.g. <code>[StudentNumber][SURNAME]</code>, no spaces). Your actual password is kept confidential.
                                         </p>
                                         <a href="${api.voter.getReceiptDownloadUrl()}" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background: #15803d; color: #ffffff; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none; box-shadow: 0 2px 8px rgba(21, 128, 61, 0.25);">
                                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -158,6 +158,9 @@
                                                     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                                     <span>Download Statement of Ballot (.PDF)</span>
                                                 </a>
+                                                <div style="font-size: 11px; color: #64748b; font-weight: 600;">
+                                                    &#128274; Password Guide: Student Number + Surname in CAPITAL letters (no spaces)
+                                                </div>
                                             </div>
                                         ` : `
                                             <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: #990000;">

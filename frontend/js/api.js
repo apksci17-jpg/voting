@@ -138,7 +138,8 @@ const api = {
         verifyPassword: (password) => api.post('voter.php?action=verify_password', { password }),
         passwordStatus: () => api.get('voter.php?action=password_status'),
         profile: () => api.get('voter.php?action=profile'),
-        updateProfile: (full_name) => api.post('voter.php?action=update_profile', { full_name }),
+        updateProfile: (full_name, passwordData = {}) => api.post('voter.php?action=update_profile', { full_name, ...passwordData }),
+        changePassword: (current_password, new_password, confirm_password = '') => api.post('voter.php?action=change_password', { current_password, new_password, confirm_password }),
         getReceiptDownloadUrl: () => `${API_BASE}/voter.php?action=download_receipt&token=${encodeURIComponent(api.getToken() || '')}`
     },
 

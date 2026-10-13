@@ -353,6 +353,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'update_profile') {
     $user = requireApiVoter();
     $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
     $newName = trim($data['full_name'] ?? '');
+    $currentPassword = $data['current_password'] ?? '';
+    $newPassword = $data['new_password'] ?? '';
+    $confirmPassword = $data['confirm_password'] ?? '';
 
     if (empty($newName)) {
         http_response_code(400);
@@ -360,10 +363,105 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'update_profile') {
         exit;
     }
 
+    // If voter also supplied password fields in update_profile, validate and update password too
+    if ($newPassword !== '' || $currentPassword !== '') {
+        if (empty($currentPassword)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Please enter your current password to set a new password.']);
+            exit;
+        }
+        if (empty($newPassword)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Please enter a new password.']);
+            exit;
+        }
+        if (strlen($newPassword) < 6) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'New password must be at least 6 characters long.']);
+            exit;
+        }
+        if ($confirmPassword !== '' && $newPassword !== $confirmPassword) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'New password and confirmation password do not match.']);
+            exit;
+        }
+
+        $isCurrentValid = password_verify($currentPassword, $user['password_hash']) || (!empty($user['student_id']) && $currentPassword === $user['student_id']);
+        if (!$isCurrentValid) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Current password is incorrect.']);
+            exit;
+        }
+
+        $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+        $stmt = $pdo->prepare("UPDATE users SET full_name = ?, password_hash = ?, pwd_failed_attempts = 0, pwd_locked_until = NULL, pwd_lock_count = 0 WHERE id = ?");
+        $stmt->execute([$newName, $newHash, $user['id']]);
+
+        echo json_encode([
+            'success' => true,
+            'password_updated' => true,
+            'message' => 'Profile and password updated successfully!'
+        ]);
+        exit;
+    }
+
     $stmt = $pdo->prepare("UPDATE users SET full_name = ? WHERE id = ?");
     $stmt->execute([$newName, $user['id']]);
 
-    echo json_encode(['success' => true]);
+    echo json_encode([
+        'success' => true,
+        'password_updated' => false,
+        'message' => 'Profile updated successfully!'
+    ]);
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'change_password') {
+    $user = requireApiVoter();
+    $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $currentPassword = $data['current_password'] ?? '';
+    $newPassword = $data['new_password'] ?? '';
+    $confirmPassword = $data['confirm_password'] ?? '';
+
+    if (empty($currentPassword)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Please enter your current password.']);
+        exit;
+    }
+
+    if (empty($newPassword)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Please enter a new password.']);
+        exit;
+    }
+
+    if (strlen($newPassword) < 6) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'New password must be at least 6 characters long.']);
+        exit;
+    }
+
+    if ($confirmPassword !== '' && $newPassword !== $confirmPassword) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'New password and confirmation password do not match.']);
+        exit;
+    }
+
+    $isCurrentValid = password_verify($currentPassword, $user['password_hash']) || (!empty($user['student_id']) && $currentPassword === $user['student_id']);
+    if (!$isCurrentValid) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'error' => 'Current password is incorrect.']);
+        exit;
+    }
+
+    $newHash = password_hash($newPassword, PASSWORD_DEFAULT);
+    $stmt = $pdo->prepare("UPDATE users SET password_hash = ?, pwd_failed_attempts = 0, pwd_locked_until = NULL, pwd_lock_count = 0 WHERE id = ?");
+    $stmt->execute([$newHash, $user['id']]);
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Your password has been updated successfully!'
+    ]);
     exit;
 }
 
@@ -374,7 +472,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'profile') {
         'profile' => [
             'full_name' => $user['full_name'],
             'student_id' => $user['student_id'] ?? $user['username'],
-            'email' => $user['email']
+            'email' => $user['email'],
+            'grade_level' => $user['grade_level'] ?? '',
+            'section' => $user['section'] ?? ''
         ]
     ]);
     exit;

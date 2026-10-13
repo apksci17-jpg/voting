@@ -328,3 +328,10 @@ c:/xampp/htdocs/voting/
   - Official Ballot e-Statement Receipt (`sendBallotReceiptViaSmtp`): Updated `$mail->setFrom()` and `$mail->addReplyTo()` to use `SMTP_FROM_NAME` instead of legacy hardcoded name.
   - Webhook Relays (`sendViaHttpsWebhook` and `sendViaHttpsWebhookWithAttachment`): Pass explicit `'from_name' => SMTP_FROM_NAME` and `'from_email' => SMTP_FROM_EMAIL` in JSON payloads.
 
+### 3.13 Voter Profile Password Management (`frontend/voter/profile.html` & `backend/api/voter.php`)
+- **Self-Service Password Modification**:
+  - Voters can update their account password directly from `frontend/voter/profile.html` via the dedicated **Change Account Password** card (`POST /backend/api/voter.php?action=change_password`) or concurrently while saving profile details (`action=update_profile`).
+  - Validates current password (accepting either bcrypt `password_hash` or initial `student_id` credential), enforces minimum 6-character length and confirmation matching, hashes the new password with `password_hash(PASSWORD_DEFAULT)`, and resets any failed password attempt/lockout counters.
+  - Includes inline vector SVG visibility toggles (`eye` / `eye-off`) and live password match indicators.
+
+

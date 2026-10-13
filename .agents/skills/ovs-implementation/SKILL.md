@@ -51,8 +51,9 @@ The system is architected as a **headless, decoupled system**:
 - `GET ?action=password_status`: Returns current lock state (`is_locked`), remaining countdown seconds (`remaining_seconds`), failed attempts, and remaining attempts.
 - `POST ?action=cast_vote`: Commits voter choices. Enforces account lockout checks and validates fallback password with progressive lockout safeguards. Encrypts payload with AES-256-CBC, inserts into `votes`, and sets `has_voted = 1` inside an atomic transaction. Triggers `generateProtectedBallotReceiptPdf()` and dispatches password-protected e-Statement email via PHPMailer.
 - `GET ?action=download_receipt`: Streams the voter's password-protected e-Statement PDF receipt (`eStatement_Ballot_[student_id].pdf`) directly to the client browser or Capacitor app.
-- `GET ?action=profile`: Returns student identity info (student ID, email, full name, birthdate).
-- `POST ?action=update_profile`: Updates voter's editable full name.
+- `GET ?action=profile`: Returns student identity info (student ID, email, full name, grade level, section).
+- `POST ?action=update_profile`: Updates voter's editable full name (and optionally updates password if `current_password` and `new_password` are supplied).
+- `POST ?action=change_password`: Validates voter's `current_password` (against bcrypt hash or initial `student_id`), verifies `new_password` (min 6 chars) and `confirm_password`, hashes with `password_hash(PASSWORD_DEFAULT)`, and resets password lockout counters.
 
 ### 2.3 Administrator Subsystem (`backend/api/admin.php`)
 - `GET ?action=dashboard`: Returns voter turnout statistics, registered voter totals, ballot counts, and system status.

@@ -11,8 +11,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
+        .profile-layout {
+            max-width: 680px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
         .profile-container {
-            max-width: 640px;
+            width: 100%;
             background: #ffffff;
             border-radius: 18px;
             border: 1px solid #e2e8f0;
@@ -41,6 +47,7 @@
             color: #0f172a;
             box-sizing: border-box;
             transition: all 0.2s ease;
+            font-family: inherit;
         }
         .form-control:focus {
             outline: none;
@@ -52,6 +59,32 @@
             color: #64748b;
             border-color: #e2e8f0;
             cursor: not-allowed;
+        }
+        .password-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-input-wrapper .form-control {
+            padding-right: 44px;
+        }
+        .pwd-toggle-btn {
+            position: absolute;
+            right: 10px;
+            background: transparent;
+            border: none;
+            color: #64748b;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s ease, background 0.15s ease;
+        }
+        .pwd-toggle-btn:hover {
+            color: #1d4ed8;
+            background: #eff6ff;
         }
         .btn-save-profile {
             background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
@@ -68,9 +101,32 @@
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
             transition: all 0.2s ease;
         }
-        .btn-save-profile:hover {
+        .btn-save-profile:hover:not(:disabled) {
             transform: translateY(-1px);
             box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+        }
+        .btn-save-profile:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+        .form-row-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .status-feedback {
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+        .pwd-hint {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 6px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         @media (max-width: 640px) {
             .profile-card-body {
@@ -82,6 +138,14 @@
                 padding: 14px 20px;
                 font-size: 15px;
             }
+            .form-row-2col {
+                grid-template-columns: 1fr;
+                gap: 0;
+            }
+            .action-row {
+                flex-direction: column;
+                align-items: stretch !important;
+            }
         }
     </style>
 </head>
@@ -91,6 +155,32 @@
     <script src="../js/api.js"></script>
     <script src="../js/components.js"></script>
     <script>
+        const EYE_OPEN_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`;
+        const EYE_OFF_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+
+        function togglePasswordField(inputId, btnEl) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                btnEl.innerHTML = EYE_OFF_SVG;
+                btnEl.setAttribute('aria-label', 'Hide password');
+            } else {
+                input.type = 'password';
+                btnEl.innerHTML = EYE_OPEN_SVG;
+                btnEl.setAttribute('aria-label', 'Show password');
+            }
+        }
+
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         (async function() {
             const user = await initPage('voter', 'profile');
             if (!user) return;
@@ -99,61 +189,151 @@
                 const res = await api.voter.profile();
                 if (res.success) {
                     const content = document.getElementById('pageContent');
+                    const p = res.profile;
                     
                     const html = `
                         <div class="animate-fade-in-up">
                             <!-- Header Banner -->
                             <div style="margin-bottom: 24px;">
                                 <h1 style="font-size: 26px; font-weight: 900; margin: 0 0 4px 0;">Student Profile</h1>
-                                <p style="font-size: 14px; color: #64748b; margin: 0;">View verified credentials and update your display name</p>
+                                <p style="font-size: 14px; color: #64748b; margin: 0;">View verified credentials, update your display name, and manage your account password</p>
                             </div>
 
-                            <div class="profile-container">
-                                <!-- Card Top Bar -->
-                                <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 16px;">
-                                    <div style="width: 56px; height: 56px; border-radius: 50%; background: #ffffff; border: 2px solid #bfdbfe; display: flex; align-items: center; justify-content: center; color: #2563eb; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
-                                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                                    </div>
-                                    <div>
-                                        <div style="font-size: 18px; font-weight: 900; color: #0f172a;">${res.profile.full_name}</div>
-                                        <div style="font-size: 12px; font-weight: 700; color: #2563eb; display: inline-flex; align-items: center; gap: 6px; margin-top: 2px;">
-                                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                            Verified Registered Voter
+                            <div class="profile-layout">
+                                <!-- Card 1: Personal & Academic Information -->
+                                <div class="profile-container">
+                                    <!-- Card Top Bar -->
+                                    <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 16px;">
+                                        <div style="width: 56px; height: 56px; border-radius: 50%; background: #ffffff; border: 2px solid #bfdbfe; display: flex; align-items: center; justify-content: center; color: #2563eb; flex-shrink: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                                            <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                                         </div>
+                                        <div>
+                                            <div id="profileHeaderName" style="font-size: 18px; font-weight: 900; color: #0f172a;">${escapeHtml(p.full_name)}</div>
+                                            <div style="font-size: 12px; font-weight: 700; color: #2563eb; display: inline-flex; align-items: center; gap: 6px; margin-top: 2px;">
+                                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                                Verified Registered Voter
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Form Content -->
+                                    <div class="profile-card-body" style="padding: 28px;">
+                                        <form id="profileForm">
+                                            <div class="form-group">
+                                                <label class="form-label" for="student_id">Student Identification Number</label>
+                                                <div style="position: relative; display: flex; align-items: center;">
+                                                    <input type="text" id="student_id" class="form-control" value="${escapeHtml(p.student_id)}" readonly>
+                                                    <div style="position: absolute; right: 14px; font-size: 11px; font-weight: 800; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">
+                                                        LOCKED
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label class="form-label" for="email">Institutional Email</label>
+                                                <div style="position: relative; display: flex; align-items: center;">
+                                                    <input type="email" id="email" class="form-control" value="${escapeHtml(p.email)}" readonly>
+                                                    <div style="position: absolute; right: 14px; font-size: 11px; font-weight: 800; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">
+                                                        LOCKED
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            ${(p.grade_level || p.section) ? `
+                                            <div class="form-row-2col">
+                                                <div class="form-group">
+                                                    <label class="form-label" for="grade_level">Year Level</label>
+                                                    <input type="text" id="grade_level" class="form-control" value="${escapeHtml(p.grade_level || '—')}" readonly>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="form-label" for="section">Section</label>
+                                                    <input type="text" id="section" class="form-control" value="${escapeHtml(p.section || '—')}" readonly>
+                                                </div>
+                                            </div>
+                                            ` : ''}
+
+                                            <div class="form-group">
+                                                <label class="form-label" for="full_name">Registered Full Name</label>
+                                                <input type="text" id="full_name" name="full_name" class="form-control" value="${escapeHtml(p.full_name)}" required>
+                                            </div>
+
+                                            <div class="action-row" style="margin-top: 24px; display: flex; align-items: center; gap: 14px;">
+                                                <button type="submit" class="btn-save-profile" id="saveBtn">
+                                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                                                    <span>Save Changes</span>
+                                                </button>
+                                                <div id="message" class="status-feedback"></div>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
 
-                                <!-- Form Content -->
-                                <div class="profile-card-body" style="padding: 28px;">
-                                    <form id="profileForm">
-                                        <div class="form-group">
-                                            <label class="form-label" for="student_id">Student Identification Number</label>
-                                            <div style="position: relative; display: flex; align-items: center;">
-                                                <input type="text" id="student_id" class="form-control" value="${res.profile.student_id}" readonly>
-                                                <div style="position: absolute; right: 14px; font-size: 11px; font-weight: 800; color: #64748b; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">
-                                                    LOCKED
+                                <!-- Card 2: Account Security & Change Password -->
+                                <div class="profile-container">
+                                    <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 14px;">
+                                        <div style="width: 44px; height: 44px; border-radius: 12px; background: #eff6ff; border: 1.5px solid #bfdbfe; display: flex; align-items: center; justify-content: center; color: #1d4ed8; flex-shrink: 0;">
+                                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 16px; font-weight: 900; color: #0f172a;">Change Account Password</div>
+                                            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">Update the password used for sign-in and ballot identity verification</div>
+                                        </div>
+                                    </div>
+
+                                    <div class="profile-card-body" style="padding: 28px;">
+                                        <form id="passwordForm" autocomplete="off">
+                                            <div class="form-group">
+                                                <label class="form-label" for="current_password">Current Password</label>
+                                                <div class="password-input-wrapper">
+                                                    <input type="password" id="current_password" name="current_password" class="form-control" placeholder="Enter your current password" autocomplete="current-password" required>
+                                                    <button type="button" class="pwd-toggle-btn" onclick="togglePasswordField('current_password', this)" aria-label="Show password">
+                                                        ${EYE_OPEN_SVG}
+                                                    </button>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div class="form-group">
-                                            <label class="form-label" for="email">Institutional Email</label>
-                                            <input type="email" id="email" class="form-control" value="${res.profile.email}" readonly>
-                                        </div>
+                                            <div class="form-row-2col">
+                                                <div class="form-group">
+                                                    <label class="form-label" for="new_password">New Password</label>
+                                                    <div class="password-input-wrapper">
+                                                        <input type="password" id="new_password" name="new_password" class="form-control" placeholder="New password (min. 6 chars)" minlength="6" autocomplete="new-password" required>
+                                                        <button type="button" class="pwd-toggle-btn" onclick="togglePasswordField('new_password', this)" aria-label="Show password">
+                                                            ${EYE_OPEN_SVG}
+                                                        </button>
+                                                    </div>
+                                                    <div class="pwd-hint" id="newPwdHint">
+                                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                                        <span>At least 6 characters required</span>
+                                                    </div>
+                                                </div>
 
-                                        <div class="form-group">
-                                            <label class="form-label" for="full_name">Registered Full Name</label>
-                                            <input type="text" id="full_name" name="full_name" class="form-control" value="${res.profile.full_name}" required>
-                                        </div>
+                                                <div class="form-group">
+                                                    <label class="form-label" for="confirm_password">Confirm New Password</label>
+                                                    <div class="password-input-wrapper">
+                                                        <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Re-enter new password" minlength="6" autocomplete="new-password" required>
+                                                        <button type="button" class="pwd-toggle-btn" onclick="togglePasswordField('confirm_password', this)" aria-label="Show password">
+                                                            ${EYE_OPEN_SVG}
+                                                        </button>
+                                                    </div>
+                                                    <div class="pwd-hint" id="confirmPwdHint"></div>
+                                                </div>
+                                            </div>
 
-                                        <div style="margin-top: 28px; display: flex; align-items: center; gap: 14px;">
-                                            <button type="submit" class="btn-save-profile" id="saveBtn">
-                                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
-                                                <span>Save Changes</span>
-                                            </button>
-                                            <div id="message" style="font-size: 13px; font-weight: 700;"></div>
-                                        </div>
-                                    </form>
+                                            <div class="action-row" style="margin-top: 12px; display: flex; align-items: center; gap: 14px;">
+                                                <button type="submit" class="btn-save-profile" id="changePwdBtn">
+                                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                                    </svg>
+                                                    <span>Update Password</span>
+                                                </button>
+                                                <div id="pwdMessage" class="status-feedback"></div>
+                                            </div>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -161,6 +341,28 @@
 
                     content.innerHTML = html;
 
+                    const newPwdInput = document.getElementById('new_password');
+                    const confirmPwdInput = document.getElementById('confirm_password');
+                    const confirmPwdHint = document.getElementById('confirmPwdHint');
+
+                    function updatePasswordMatchHint() {
+                        const np = newPwdInput.value;
+                        const cp = confirmPwdInput.value;
+                        if (!cp) {
+                            confirmPwdHint.innerHTML = '';
+                            return;
+                        }
+                        if (np === cp) {
+                            confirmPwdHint.innerHTML = `<span style="color: #16a34a; display: inline-flex; align-items: center; gap: 4px; font-weight: 700;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Passwords match</span>`;
+                        } else {
+                            confirmPwdHint.innerHTML = `<span style="color: #dc2626; display: inline-flex; align-items: center; gap: 4px; font-weight: 700;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> Passwords do not match</span>`;
+                        }
+                    }
+
+                    newPwdInput.addEventListener('input', updatePasswordMatchHint);
+                    confirmPwdInput.addEventListener('input', updatePasswordMatchHint);
+
+                    // Handler 1: Save Profile Form (also saves password if user typed into password fields and clicked Save Changes)
                     document.getElementById('profileForm').addEventListener('submit', async function(e) {
                         e.preventDefault();
                         const btn = document.getElementById('saveBtn');
@@ -170,21 +372,87 @@
                         msg.innerHTML = '';
                         
                         const fullName = document.getElementById('full_name').value.trim();
+                        const currentPassword = document.getElementById('current_password').value;
+                        const newPassword = document.getElementById('new_password').value;
+                        const confirmPassword = document.getElementById('confirm_password').value;
+
+                        const passwordData = (newPassword || currentPassword)
+                            ? { current_password: currentPassword, new_password: newPassword, confirm_password: confirmPassword }
+                            : {};
                         
                         try {
-                            const updateRes = await api.voter.updateProfile(fullName);
+                            const updateRes = await api.voter.updateProfile(fullName, passwordData);
                             if (updateRes.success) {
-                                msg.innerHTML = '<span style="color: #16a34a; display: inline-flex; align-items: center; gap: 4px;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Profile updated successfully!</span>';
+                                document.getElementById('profileHeaderName').textContent = fullName;
+                                if (updateRes.password_updated) {
+                                    document.getElementById('current_password').value = '';
+                                    document.getElementById('new_password').value = '';
+                                    document.getElementById('confirm_password').value = '';
+                                    confirmPwdHint.innerHTML = '';
+                                }
+                                msg.innerHTML = `<span style="color: #16a34a; display: inline-flex; align-items: center; gap: 4px;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ${escapeHtml(updateRes.message || 'Profile updated successfully!')}</span>`;
                             } else {
-                                msg.innerHTML = '<span style="color: #dc2626;">' + (updateRes.error || 'Failed to update') + '</span>';
+                                msg.innerHTML = `<span style="color: #dc2626;">${escapeHtml(updateRes.error || 'Failed to update profile.')}</span>`;
                             }
                         } catch (err) {
-                            msg.innerHTML = '<span style="color: #dc2626;">Error saving changes.</span>';
+                            msg.innerHTML = `<span style="color: #dc2626;">Error saving changes.</span>`;
                         } finally {
                             btn.disabled = false;
                             btn.innerHTML = `
                                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
                                 <span>Save Changes</span>
+                            `;
+                        }
+                    });
+
+                    // Handler 2: Dedicated Change Password Form
+                    document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+                        e.preventDefault();
+                        const pwdBtn = document.getElementById('changePwdBtn');
+                        const pwdMsg = document.getElementById('pwdMessage');
+                        const currentPassword = document.getElementById('current_password').value;
+                        const newPassword = document.getElementById('new_password').value;
+                        const confirmPassword = document.getElementById('confirm_password').value;
+
+                        pwdMsg.innerHTML = '';
+
+                        if (!currentPassword) {
+                            pwdMsg.innerHTML = `<span style="color: #dc2626;">Please enter your current password.</span>`;
+                            return;
+                        }
+                        if (!newPassword || newPassword.length < 6) {
+                            pwdMsg.innerHTML = `<span style="color: #dc2626;">New password must be at least 6 characters long.</span>`;
+                            return;
+                        }
+                        if (newPassword !== confirmPassword) {
+                            pwdMsg.innerHTML = `<span style="color: #dc2626;">New password and confirmation do not match.</span>`;
+                            return;
+                        }
+
+                        pwdBtn.disabled = true;
+                        pwdBtn.innerHTML = `<span>Updating Password...</span>`;
+
+                        try {
+                            const pwdRes = await api.voter.changePassword(currentPassword, newPassword, confirmPassword);
+                            if (pwdRes.success) {
+                                document.getElementById('current_password').value = '';
+                                document.getElementById('new_password').value = '';
+                                document.getElementById('confirm_password').value = '';
+                                confirmPwdHint.innerHTML = '';
+                                pwdMsg.innerHTML = `<span style="color: #16a34a; display: inline-flex; align-items: center; gap: 4px;"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> ${escapeHtml(pwdRes.message || 'Password updated successfully!')}</span>`;
+                            } else {
+                                pwdMsg.innerHTML = `<span style="color: #dc2626;">${escapeHtml(pwdRes.error || 'Failed to update password.')}</span>`;
+                            }
+                        } catch (err) {
+                            pwdMsg.innerHTML = `<span style="color: #dc2626;">Error updating password.</span>`;
+                        } finally {
+                            pwdBtn.disabled = false;
+                            pwdBtn.innerHTML = `
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                                <span>Update Password</span>
                             `;
                         }
                     });

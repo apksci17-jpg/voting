@@ -140,6 +140,7 @@ The voter workflow is protected by `requireApiVoter()`:
 - Completing biometric or password identity verification
 - Submitting the final vote with AES-256-CBC ballot encryption
 - Downloading password-protected electronic ballot statement receipts (`action=download_receipt`)
+- Updating display name (`action=update_profile`) and changing account password (`action=change_password`) after verifying current password
 
 ### Rule 4.3 — Never Trust Client-Side Role Data
 Never authorize actions based on `localStorage` role flags, hidden form inputs, or disabled buttons. Every API endpoint must validate the Bearer token and check the database role.

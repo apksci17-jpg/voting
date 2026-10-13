@@ -580,6 +580,29 @@ c:/xampp/htdocs/voting/
 
 ---
 
+### Z. Voter Profile Password Management & Account Security
+- **Stakeholder Directive**: Analyze the student profile page on the voter side and ensure voters can modify or change their account password.
+- **Backend API Enhancements (`backend/api/voter.php`)**:
+  - **Dedicated Password Change Endpoint (`POST ?action=change_password`)**:
+    - Requires authenticated voter (`requireApiVoter()`).
+    - Validates `current_password`, `new_password` (minimum 6 characters), and `confirm_password` match.
+    - Supports dual credential verification for `current_password`: matches either `password_verify($currentPassword, $user['password_hash'])` or the initial raw `student_id` fallback so students changing their password for the first time experience zero friction.
+    - Hashes the new password with `password_hash($newPassword, PASSWORD_DEFAULT)`, updates `users.password_hash`, and resets password lockout counters (`pwd_failed_attempts = 0`, `pwd_locked_until = NULL`, `pwd_lock_count = 0`).
+  - **Unified Profile & Password Update (`POST ?action=update_profile`)**:
+    - Also accepts optional `current_password`, `new_password`, and `confirm_password` alongside `full_name` so that if a voter fills out password fields and clicks "Save Changes" on the profile form, both their display name and password are updated atomically.
+  - **Extended Profile Payload (`GET ?action=profile`)**:
+    - Returns `grade_level` and `section` in addition to `full_name`, `student_id`, and `email`.
+- **Frontend Student Profile UI (`frontend/voter/profile.html` & Android Assets Mirror)**:
+  - **Card 1 — Personal & Academic Information**: Displays locked Student ID, locked Institutional Email, locked Year Level & Section, and editable Registered Full Name.
+  - **Card 2 — Change Account Password (`#passwordForm`)**:
+    - Dedicated password management card with Current Password, New Password, and Confirm New Password fields.
+    - Interactive inline SVG eye / eye-off visibility toggle buttons (`togglePasswordField`) on all three password inputs.
+    - Real-time password match indicator (`#confirmPwdHint`) and minimum 6-character validation.
+- **Client API Wrapper (`frontend/js/api.js`)**:
+  - Added `api.voter.changePassword(current_password, new_password, confirm_password)` and extended `api.voter.updateProfile(full_name, passwordData)`.
+
+---
+
 ## 4. Key Operating Principles & Constraints
 1. **Headless Discipline**: PHP files reside strictly in `backend/` and output JSON or PDF documents. All HTML rendering is performed by the `frontend/` static client.
 2. **Capacitor Mobile Ready**: All asset and API paths resolve dynamically. State is managed via `localStorage` and `sessionStorage`.
@@ -590,6 +613,7 @@ c:/xampp/htdocs/voting/
 7. **Masterlist Synchronization**: The system automatically aligns the voter database with the authoritative class masterlist on startup and cloud deployment, ensuring all voters have their verified email addresses for 2FA OTP delivery.
 8. **Native Android Multi-Density Icons**: All launcher icons must provide full adaptive (108dp canvas with 72dp safe zone) and legacy (mdpi through xxxhdpi) sets to guarantee pixel-perfect rendering across all Android devices and OEM launchers.
 9. **Outbound Email Sender Identity**: All system-generated emails (Voter OTP, Admin OTP, Lockout Alerts, and Ballot e-Statements) must strictly dispatch under the institutional brand "Tomorrow Vote" across all SMTP and HTTPS relay pathways.
+
 
 
 
